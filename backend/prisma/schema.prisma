@@ -54,6 +54,7 @@ model User {
   updatedAt      DateTime        @updatedAt
   twoFAEnabled   Boolean         @default(false)
   twoFASecret    String?
+  isDeactivated   Boolean         @default(false)
   taskComments   TaskComment[]
   messages       Message[]
   attachments    Attachment[]
@@ -61,10 +62,20 @@ model User {
   calendarTokens CalendarToken?
   tasksAssigned          Task[] @relation("TaskAssignee")
   tasksCreated           Task[] @relation("TaskCreatedBy")
+  refreshTokens  RefreshToken[]
 
   projectMemberShips ProjectMember[]
   workspaceMemberships WorkspaceMember[]
   chatRooms ChatRoomParticipant[]
+}
+model RefreshToken{
+  id         String   @id @default(uuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
 }
 
 // WOrkspace Details
