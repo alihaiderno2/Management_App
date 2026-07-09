@@ -72,6 +72,15 @@ async logout(refreshToken: string){
     });
     return {message : 'Logged out successfully'};
 }
+
+// Google OAuth function to handle the google login and registration
+async googleAuthentication(profile: { id: string; emails: { value: string }[]; displayName: string }) {
+    const user = await this.userService.findOrCreateGoogleUser(profile);
+    if(!user){
+        throw new UnauthorizedException('Google authentication failed');
+    }
+    return this.issueTokens(user.id,user.email);
+}
 // TO issue the tokens to the user
 async issueTokens(userId : string,email : string){
     const accessToken = await this.generateAccessToken(userId,email, 60 * 15);
@@ -88,11 +97,13 @@ async forgotPassword(email:string){
 
     const tokenHash = await bcrypt.hash(resetToken, 10);
 
+    // Deleting any existing reset tokens for the user and creating a new one
     await this.prisma.passwordResetToken.deleteMany({
         where: {
             userId: user.id,
         },
     });
+    // Creating a new reset token for the user
     await this.prisma.passwordResetToken.create({
         data: {
             tokenHash,
@@ -106,11 +117,13 @@ async forgotPassword(email:string){
 // to Handle the reset of password
 async resetPassword(resetToken : string, newPassword : string){
 
+    // Verifying the reset token and getting the userId
     const payload = await this.jwtService.verifyAsync(resetToken);
     if(!payload || !payload.userId){
         throw new UnauthorizedException('Invalid or expired reset token');
     }
 
+    // Checking if the reset token exists in the DB
     const tokenRecord =
     await this.prisma.passwordResetToken.findFirst({
         where: {
@@ -121,6 +134,7 @@ async resetPassword(resetToken : string, newPassword : string){
         throw new UnauthorizedException('Invalid or expired reset token');
     }
 
+    // Validating  the reset token and checking if it is expired
     const valid = await bcrypt.compare(
         resetToken,
         tokenRecord.tokenHash
@@ -130,9 +144,12 @@ async resetPassword(resetToken : string, newPassword : string){
         throw new UnauthorizedException("Invalid or expired reset token");
     }
 
+    // Deleting the reset token from the DB
     await this.prisma.passwordResetToken.deleteMany({
         where: { userId: payload.userId },
     });
+
+// Updating the user's password in the DB
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     await this.prisma.user.update({
         where: { id: payload.userId },

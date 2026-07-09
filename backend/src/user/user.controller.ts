@@ -18,6 +18,4 @@ export class UserController {
         const {passwordHash : _passwordHash,twoFASecret: _twoFASecret,...safeUser} = user;
         return safeUser;
     }
-
-
 }

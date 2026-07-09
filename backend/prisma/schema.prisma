@@ -47,7 +47,7 @@ enum NotificationWays {
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
-  passwordHash   String
+  passwordHash   String?
   name           String
   profileImage   String?
   createdAt      DateTime        @default(now())
@@ -55,6 +55,9 @@ model User {
   twoFAEnabled   Boolean         @default(false)
   twoFASecret    String?
   isDeactivated   Boolean         @default(false)
+  googleId       String?         @unique
+  githubId       String?         @unique
+
   taskComments   TaskComment[]
   messages       Message[]
   attachments    Attachment[]
