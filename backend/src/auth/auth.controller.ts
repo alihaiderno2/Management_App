@@ -51,4 +51,14 @@ export class AuthController {
     async googleAuthRedirect(@Req() req :{user: {id: string; emails: { value: string }[]; displayName: string}}) {
         return this.authService.googleAuthentication(req.user);
     }
+
+    @UseGuards(AuthGuard('github'))
+    @Get('github')
+    async githubLogin() {}
+
+    @Get('github/callback')
+    @UseGuards(AuthGuard('github'))
+    async githubAuthentication(@Req() req:any){
+        return this.authService.githubAuthentication(req.user);
+    }
 }

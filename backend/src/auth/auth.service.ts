@@ -81,6 +81,8 @@ async googleAuthentication(profile: { id: string; emails: { value: string }[]; d
     }
     return this.issueTokens(user.id,user.email);
 }
+
+
 // TO issue the tokens to the user
 async issueTokens(userId : string,email : string){
     const accessToken = await this.generateAccessToken(userId,email, 60 * 15);
@@ -112,6 +114,14 @@ async forgotPassword(email:string){
         },
     });
     return {resetToken};
+}
+// Github Authentication function
+async githubAuthentication(profile:any){
+    const user  = await this.userService.findOrCreateGithubUser(profile);
+    if(!user ){
+        throw new UnauthorizedException('Github authentication failed');
+    }
+    return this.issueTokens(user.id,user.email);
 }
 
 // to Handle the reset of password
