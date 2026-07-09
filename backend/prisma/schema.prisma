@@ -63,6 +63,7 @@ model User {
   tasksAssigned          Task[] @relation("TaskAssignee")
   tasksCreated           Task[] @relation("TaskCreatedBy")
   refreshTokens  RefreshToken[]
+  passwordResetTokens passwordResetToken[]
 
   projectMemberShips ProjectMember[]
   workspaceMemberships WorkspaceMember[]
@@ -76,6 +77,14 @@ model RefreshToken{
   expiresAt  DateTime
   createdAt  DateTime @default(now())
 
+}
+model passwordResetToken{
+  id         String   @id @default(uuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 }
 
 // WOrkspace Details
