@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
+import { TwoFactorModule } from '../two-factor/two-factor.module';
 
 @Module({
   imports: [UserModule,PassportModule.register({
@@ -20,7 +21,8 @@ import { GithubStrategy } from './strategies/github.strategy';
       secret: configService.get<string>('JWT_SECRET'),
       signOptions: { expiresIn: '15m' },
     }),
-  })],
+  }),TwoFactorModule
+],
   controllers: [AuthController],
   providers: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy],
 })

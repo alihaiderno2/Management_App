@@ -1,10 +1,20 @@
-import {IsEmail, IsString, Min, MinLength} from 'class-validator';
+import {IsEmail, IsOptional, IsString, Min, IsStrongPassword} from 'class-validator';
 
 export class LoginDto{
     @IsEmail()
     email: string = '';
 
     @IsString()
-    @MinLength(8, { message: 'Password must be at least 6 characters' })
+    @IsStrongPassword({
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1,
+      })
     password: string = '';
+
+    @IsOptional()
+    @IsString()
+    twoFACode?: string;
 }

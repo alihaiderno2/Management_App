@@ -5,12 +5,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { TwoFactorService } from '../two-factor/two-factor.service';
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly twoFactorService: TwoFactorService
   ) {}
 
   async register(dto: RegisterDto){
@@ -37,6 +40,19 @@ async login(dto: LoginDto){
     if(!passwordValidation){
         throw new UnauthorizedException('Invalid email or password');
     }
+
+    // Checking 2FA if enabled
+    if(user.twoFAEnabled){
+        console.log("User has 2FA enabled", dto.twoFACode);
+        if(!dto.twoFACode){
+            throw new UnauthorizedException('Two Factor Authentication code is required');
+        }
+        const isValid = await this.twoFactorService.verifyCode(user.id, dto.twoFACode);
+        if(!isValid){
+            throw new UnauthorizedException('Invalid Two Factor Authentication code');
+        }
+    }
+
     const tokens = await this.issueTokens(user.id,user.email);
     return tokens;
 }

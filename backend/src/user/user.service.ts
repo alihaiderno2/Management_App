@@ -180,4 +180,22 @@ export class UserService {
     });
     return user;
   }
+
+
+  // Enable two factor authentication
+  async enableTwoFactor(userId: string){
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFAEnabled: true },
+    });
+    return user;
+  }
+
+  async updateTwoFASecret(userId: string, secret: string){
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFASecret: secret },
+    });
+    return user;
+  }
 }
