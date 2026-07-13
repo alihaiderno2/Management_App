@@ -20,6 +20,10 @@ export class AuthController {
     @Version('2')
     @Post('register')
     async registerV2(@Body() dto:RegisterDto){
+        const result = await this.authService.checkIfPasswordHasBeenPwned(dto.password);
+        if(result){
+            throw new Error('Password has been compromised in a data breach.');
+        }
         return this.authService.register(dto);
     }
 

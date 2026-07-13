@@ -198,4 +198,17 @@ export class UserService {
     });
     return user;
   }
+
+  async findByToken(token: string) {
+    const tokenFound = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: token },
+    });
+    if (!tokenFound) {
+      return null;
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: tokenFound.userId },
+    });
+    return user;
+  }
 }

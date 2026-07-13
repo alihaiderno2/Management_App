@@ -7,6 +7,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { TwoFactorService } from '../two-factor/two-factor.service';
 import {EmailService} from '../email/email.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -34,6 +35,35 @@ export class AuthService {
 
   }
 
+
+  async checkIfPasswordHasBeenPwned(password: string): Promise<boolean> {
+    const sha1Hash = crypto.createHash('sha1').update(password).digest('hex').toUpperCase();
+
+    const prefix = sha1Hash.slice(0, 5);
+    const suffix = sha1Hash.slice(5);
+    try{
+        const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`) ;
+        console.log(`https://api.pwnedpasswords.com/range/${prefix}`);
+        if (!response.ok) {
+            return false;
+        }
+
+        const data = await response.text() ;
+        const lines = data.split('\n');
+        for (const line of lines) {
+            const [hashSuffix, count] = line.split(':');
+            if (hashSuffix === suffix) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    catch(error){
+        console.error('Error checking password against Have I Been Pwned API:', error);
+        return false;
+    }
+  }
 async login(dto: LoginDto){
     const user = await this.userService.findByEmail(dto.email);
     if(!user || !user.passwordHash){

@@ -23,6 +23,7 @@ import { EmailModule } from './email/email.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [ThrottlerModule.forRoot([{
@@ -42,7 +43,8 @@ import { APP_GUARD } from '@nestjs/core';
     EmailModule,
     ConfigModule.forRoot({
       isGlobal: true,
-    })
+    }),
+    TasksModule
   ],
   controllers: [AppController, UserController, TwoFactorController, WorkspaceController, ProjectController, TaskController, SprintController],
   providers: [AppService, PrismaService, TwoFactorService, WorkspaceService, ProjectService, TaskService, SprintService, EmailService,{
