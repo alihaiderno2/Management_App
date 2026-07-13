@@ -57,6 +57,7 @@ model User {
   isDeactivated   Boolean         @default(false)
   googleId       String?         @unique
   githubId       String?         @unique
+  emailVerified Boolean @default(false)
 
   taskComments   TaskComment[]
   messages       Message[]
@@ -101,6 +102,7 @@ model Workspace {
   projects  Project[]
   members   WorkspaceMember[]
   chatRooms ChatRoom[]
+  disabled Boolean  @default(false)
 }
 // to define the workspace scope of the user
 model WorkspaceMember {

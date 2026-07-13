@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Get, UseGuards, Req} from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Query, Version} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -10,19 +11,27 @@ import { GoogleAuthGuard } from './guards/googleAuth.guard';
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
+    @Throttle({ default: { limit: 5, ttl: 300000 } })
     @Post('register')
     async register(@Body() dto:RegisterDto){
         return this.authService.register(dto);
     }
-    
+
+    @Version('2')
+    @Post('register')
+    async registerV2(@Body() dto:RegisterDto){
+        return this.authService.register(dto);
+    }
+
+    @Throttle({ default: { limit: 5, ttl: 50000 } })
     @Post('login')
     async login(@Body() dto:LoginDto){
         return this.authService.login(dto);
     }
 
     @Post('refresh')
-    async refresh(@Body() token: refreshToken){
-        return this.authService.refresh(token.token);
+    async refresh(@Body() tokeninBody: refreshToken){
+        return this.authService.refresh(tokeninBody.token);
     }
 
     @Post('logout')
@@ -60,6 +69,11 @@ export class AuthController {
     @UseGuards(AuthGuard('github'))
     async githubAuthentication(@Req() req:any){
         return this.authService.githubAuthentication(req.user);
+    }
+
+    @Get('verify-email')
+    async verifyEmail(@Query('token') token : string){
+        return this.authService.verifyEmail(token);
     }
 
 }

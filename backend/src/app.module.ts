@@ -17,10 +17,37 @@ import { TaskController } from './task/task.controller';
 import { TaskService } from './task/task.service';
 import { SprintController } from './sprint/sprint.controller';
 import { SprintService } from './sprint/sprint.service';
+import { EmailService } from './email/email.service';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { EmailModule } from './email/email.module';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
-  imports: [PrismaModule, UserModule, AuthModule, TwoFactorModule],
+  imports: [ThrottlerModule.forRoot([{
+      ttl: 60000, 
+      limit: 10,  
+    }]),
+    PrismaModule, UserModule, AuthModule, TwoFactorModule,
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.EMAIL_HOST,
+        auth: {
+          user: process.env.EMAIL_USERNAME,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      },
+    }),
+    EmailModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    })
+  ],
   controllers: [AppController, UserController, TwoFactorController, WorkspaceController, ProjectController, TaskController, SprintController],
-  providers: [AppService, PrismaService, TwoFactorService, WorkspaceService, ProjectService, TaskService, SprintService],
+  providers: [AppService, PrismaService, TwoFactorService, WorkspaceService, ProjectService, TaskService, SprintService, EmailService,{
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, 
+    }],
 })
 export class AppModule {}

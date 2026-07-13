@@ -9,9 +9,10 @@ import {ConfigModule, ConfigService} from '@nestjs/config';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
 import { TwoFactorModule } from '../two-factor/two-factor.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [UserModule,PassportModule.register({
+  imports: [EmailModule,UserModule,PassportModule.register({
     defaultStrategy: 'jwt',
   })
     ,ConfigModule,JwtModule.registerAsync({

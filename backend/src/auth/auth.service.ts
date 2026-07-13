@@ -6,6 +6,7 @@ import { UserService } from '../user/user.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { TwoFactorService } from '../two-factor/two-factor.service';
+import {EmailService} from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -13,7 +14,8 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly twoFactorService: TwoFactorService
+    private readonly twoFactorService: TwoFactorService,
+    private readonly emailService: EmailService
   ) {}
 
   async register(dto: RegisterDto){
@@ -27,6 +29,7 @@ export class AuthService {
         throw new UnauthorizedException('User registration failed');
     }
 
+    await this.sendVerificationEmail(user.id,user.email);
     return this.issueTokens(user.id,user.email);
 
   }
@@ -47,8 +50,8 @@ async login(dto: LoginDto){
         if(!dto.twoFACode){
             throw new UnauthorizedException('Two Factor Authentication code is required');
         }
-        const isValid = await this.twoFactorService.verifyCode(user.id, dto.twoFACode);
-        if(!isValid){
+        const result = await this.twoFactorService.verifyCode(user.id, dto.twoFACode);
+        if(!result.valid){
             throw new UnauthorizedException('Invalid Two Factor Authentication code');
         }
     }
@@ -183,7 +186,40 @@ async resetPassword(resetToken : string, newPassword : string){
     });
     return {message : 'Password reset successfully'};
 }
+// To send the verification email
+async sendVerificationEmail(userId : string, email : string){
+    const token = await this.jwtService.signAsync(
+        {userId , type : 'email-verification'
+        },
+        {expiresIn: '1h'});
 
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
+
+        await this.emailService.sendEmail({
+            recipients: [email],
+            subject: 'Verify your email',
+            html: `<p>Please verify your email by clicking the link below:</p><a href="${verificationLink}">Verify Email</a>`,
+        });
+}
+// To verify the email of the user
+async verifyEmail(token : string){
+    let payload;
+    try{   
+        payload = await this.jwtService.verifyAsync(token);
+        if(!payload || !payload.userId || payload.type !== 'email-verification'){
+            throw new UnauthorizedException('Invalid or expired email verification token');
+        }
+    }catch(error){
+        throw new UnauthorizedException('Invalid or expired email verification token');
+    }
+
+    await this.prisma.user.update({
+        where: { id: payload.userId },
+        data: { emailVerified: true },
+    });
+    return {message : 'Email verified successfully'};
+}
 async generateAccessToken(userId : string,email : string, expiresIn: number){
     const token = await this.jwtService.signAsync({userId,email}, {expiresIn});
     return token;

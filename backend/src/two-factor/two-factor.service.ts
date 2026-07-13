@@ -27,15 +27,13 @@ export class TwoFactorService {
     // TO veriffy the code provided by user
     async verifyAndEnable(userId: string, code: string) {
         const user = await this.userService.findById(userId);
-        console.log('User:', user);
-        console.log('Code:', code);
         if(!user?.twoFASecret){
             return false;
         }
 
         const secret = user.twoFASecret;
-        const isValid = verify({secret, token: code});
-        if(!isValid){
+        const result = await verify({secret, token: code});
+        if(!result.valid){
             return false;
         }
         await this.userService.enableTwoFactor(userId);
@@ -45,11 +43,11 @@ export class TwoFactorService {
     async verifyCode(userId: string, code: string){
         const user = await this.userService.findById(userId);
         if(!user?.twoFASecret){
-            return false;
+            return {valid:false};
         }
 
         const secret = user.twoFASecret;
-        const isValid = verify({secret, token: code});
-        return isValid;
+        const result = await verify({secret, token: code});
+        return result;
     }
 }
