@@ -8,6 +8,7 @@ import { LoginDto } from './dto/login.dto';
 import { TwoFactorService } from '../two-factor/two-factor.service';
 import {EmailService} from '../email/email.service';
 import * as crypto from 'crypto';
+import {RedisService} from '../redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +17,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly twoFactorService: TwoFactorService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly redisService: RedisService
   ) {}
 
   async register(dto: RegisterDto){
@@ -74,6 +76,10 @@ async login(dto: LoginDto){
         throw new UnauthorizedException('Invalid email or password');
     }
 
+    const isDeactivated = user.isDeactivated;
+    if(isDeactivated){
+        throw new UnauthorizedException('Account is deactivated. Please try again later.');
+    }
     // Checking 2FA if enabled
     if(user.twoFAEnabled){
         console.log("User has 2FA enabled", dto.twoFACode);
@@ -235,7 +241,7 @@ async sendVerificationEmail(userId : string, email : string){
 // To verify the email of the user
 async verifyEmail(token : string){
     let payload;
-    try{   
+    try{
         payload = await this.jwtService.verifyAsync(token);
         if(!payload || !payload.userId || payload.type !== 'email-verification'){
             throw new UnauthorizedException('Invalid or expired email verification token');
@@ -251,12 +257,12 @@ async verifyEmail(token : string){
     return {message : 'Email verified successfully'};
 }
 async generateAccessToken(userId : string,email : string, expiresIn: number){
-    const token = await this.jwtService.signAsync({userId,email}, {expiresIn});
+    const token = await this.jwtService.signAsync({userId,email, type : 'access'}, {expiresIn});
     return token;
 }
 
 async generateRefreshToken(userId : string,email : string, expiresIn: number){
-    const token = await this.jwtService.signAsync({userId,email}, {expiresIn});
+    const token = await this.jwtService.signAsync({userId,email, type : 'refresh'}, {expiresIn});
     await this.prisma.refreshToken.create({
         data: {
         tokenHash: token,

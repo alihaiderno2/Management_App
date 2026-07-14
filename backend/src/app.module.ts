@@ -24,9 +24,17 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { TasksModule } from './tasks/tasks.module';
+import { RedisModule } from './redis/redis.module';
+import {BullModule} from '@nestjs/bullmq';
 
 @Module({
-  imports: [ThrottlerModule.forRoot([{
+  imports: [BullModule.forRoot({
+    connection: {
+      host: process.env.REDIS_HOST,
+      port: 6379,
+    },
+  }),
+    RedisModule,ThrottlerModule.forRoot([{
       ttl: 60000, 
       limit: 10,  
     }]),
@@ -44,7 +52,8 @@ import { TasksModule } from './tasks/tasks.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TasksModule
+    TasksModule,
+    RedisModule
   ],
   controllers: [AppController, UserController, TwoFactorController, WorkspaceController, ProjectController, TaskController, SprintController],
   providers: [AppService, PrismaService, TwoFactorService, WorkspaceService, ProjectService, TaskService, SprintService, EmailService,{

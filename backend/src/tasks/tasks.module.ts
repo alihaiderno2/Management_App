@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
-import { TasksService } from './tasks.service';
+import { AccountActivationProcessor } from './account-activation.processor';
+import {BullModule} from '@nestjs/bullmq';
 
 @Module({
-  providers: [TasksService]
+  imports: [BullModule.registerQueue({
+      name: 'account-activation',
+    }),],
+  providers: [AccountActivationProcessor],
+  exports: [BullModule],
 })
 export class TasksModule {}

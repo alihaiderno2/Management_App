@@ -211,4 +211,13 @@ export class UserService {
     });
     return user;
   }
+  async deactivateUser(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isDeactivated: true },
+    });
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
+  }
 }
