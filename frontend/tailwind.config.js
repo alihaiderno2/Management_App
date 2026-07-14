@@ -1,4 +1,8 @@
+/** @type {import('tailwindcss').Config} */
 module.exports = {
+  content: [
+    "./app/**/*.{js,ts,jsx,tsx,mdx}", // This tells Tailwind to watch all files in your src path alias
+  ],
   theme: {
     extend: {
       colors: {
@@ -16,5 +20,6 @@ module.exports = {
         }
       }
     }
-  }
+  },
+  plugins: [],
 }
