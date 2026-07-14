@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Req, Query, Version} from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Query, Version, Res} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -7,41 +7,65 @@ import { refreshToken } from './dto/refreshToken.dto';
 import {ResetPasswordDto} from './dto/resetPassword.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GoogleAuthGuard } from './guards/googleAuth.guard';
+import type { Request,Response } from 'express';
+
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
     @Throttle({ default: { limit: 5, ttl: 300000 } })
     @Post('register')
-    async register(@Body() dto:RegisterDto){
-        return this.authService.register(dto);
+    async register(@Body() dto:RegisterDto ,@Res({passthrough : true}) res: Response){
+        const {accessToken,refreshToken } =  await this.authService.register(dto);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        return {accessToken};
     }
 
     @Version('2')
     @Post('register')
-    async registerV2(@Body() dto:RegisterDto){
+    async registerV2(@Body() dto:RegisterDto, @Res({passthrough : true}) res: Response){
         const result = await this.authService.checkIfPasswordHasBeenPwned(dto.password);
         if(result){
             throw new Error('Password has been compromised in a data breach.');
         }
-        return this.authService.register(dto);
+        const {accessToken, refreshToken} =  await this.authService.register(dto);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        return {accessToken};
     }
 
     @Throttle({ default: { limit: 5, ttl: 50000 } })
     @Post('login')
-    async login(@Body() dto:LoginDto){
-        return this.authService.login(dto);
+    async login(@Body() dto:LoginDto, @Res({passthrough : true}) res: Response){
+        const {accessToken, refreshToken} = await this.authService.login(dto);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        return {accessToken};
     }
 
     @Post('refresh')
-    async refresh(@Body() tokeninBody: refreshToken){
-        return this.authService.refresh(tokeninBody.token);
+    async refresh(@Req()req: Request){
+        console.log('Refresh token from cookie:', req.cookies.refreshToken);
+        return this.authService.refresh(req.cookies.refreshToken);
     }
 
     @UseGuards(AuthGuard('jwt'))
     @Post('logout')
-    async logout(@Body() token : refreshToken){
-        return this.authService.logout(token.token);
+    async logout(@Req() req: Request){
+        return this.authService.logout(req.cookies.refreshToken);
     }
 
     @Post('forgot-password')

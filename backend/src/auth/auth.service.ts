@@ -109,6 +109,9 @@ async refresh(refreshToken: string){
     if(!user){
         throw new UnauthorizedException('User not found');
     }
+    if(user.isDeactivated){
+        throw new UnauthorizedException('Account is deactivated. Please try again later.');
+    }
     // Generate a new access token
     const token = await this.generateAccessToken(user.id,user.email, 60 * 15);
 
