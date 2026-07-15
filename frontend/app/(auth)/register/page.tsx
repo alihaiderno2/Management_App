@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import Link from 'next/link';
 
 function validateName(name: string): string {
   if (!name.trim()) return 'Name is required';
@@ -162,9 +163,9 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-[#9A9CA3]">
           Already have an account?{' '}
-          <a href="/login" className="text-[#F5F4F0] hover:text-white font-medium underline">
+          <Link href="/login" className="text-[#F5F4F0] hover:text-white font-medium underline">
             Log in
-          </a>
+          </Link>
         </p>
       </div>
     </main>

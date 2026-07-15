@@ -171,6 +171,14 @@ async forgotPassword(email:string){
             expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes from now
         },
     });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const verificationLink = `${frontendUrl}/reset-password/?token=${resetToken}`;
+    await this.emailService.sendEmail({
+            recipients: [email],
+            subject: 'Verify your email',
+            html: `<div><h2>Reset Password</h2><p>Please reset your password by clicking the link below:</p><a href="${verificationLink}">Verify Email</a><p>The link will expire in 5 minutes.</p></div>`,
+        });
     return {resetToken};
 }
 // Github Authentication function
