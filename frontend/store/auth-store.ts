@@ -1,21 +1,25 @@
-import {create} from 'zustand';
+import { create } from 'zustand';
 
-interface User{
+interface User {
     id: string;
     name: string;
     email: string;
 }
 
-interface AuthState{
+interface AuthState {
     user: User | null;
+    accessToken: string | null;
     isAuthenticated: boolean;
-    setSession: (user: User) => void;
+    setSession: (user: User, accessToken: string) => void;
+    setAccessToken: (accessToken: string) => void;
     clearSession: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
     user: null,
+    accessToken: null,
     isAuthenticated: false,
-    setSession: (user: User) => set({ user, isAuthenticated: true }),
-    clearSession: () => set({ user: null, isAuthenticated: false }),
-}))
+    setSession: (user, accessToken) => set({ user, accessToken, isAuthenticated: true }),
+    setAccessToken: (accessToken) => set({ accessToken }),
+    clearSession: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+}));

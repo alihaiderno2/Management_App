@@ -8,6 +8,7 @@ import {ResetPasswordDto} from './dto/resetPassword.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GoogleAuthGuard } from './guards/googleAuth.guard';
 import type { Request,Response } from 'express';
+import { GithubGuard } from './guards/githubAuth.guard';
 
 
 @Controller('auth')
@@ -86,18 +87,36 @@ export class AuthController {
 
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
-    async googleAuthRedirect(@Req() req :{user: {id: string; emails: { value: string }[]; displayName: string}}) {
-        return this.authService.googleAuthentication(req.user);
+    async googleAuthRedirect(@Req() req :{user: {id: string; emails: { value: string }[]; displayName: string}}, @Res() res: Response) {
+        const {accessToken, refreshToken } = await this.authService.googleAuthentication(req.user);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/oauth/callback?accessToken=${accessToken}`);
     }
 
-    @UseGuards(AuthGuard('github'))
+    @UseGuards(GithubGuard)
     @Get('github')
     async githubLogin() {}
 
     @Get('github/callback')
     @UseGuards(AuthGuard('github'))
-    async githubAuthentication(@Req() req:any){
-        return this.authService.githubAuthentication(req.user);
+    async githubAuthentication(@Req() req:any, @Res() res: Response){
+        const {accessToken, refreshToken } = await this.authService.githubAuthentication(req.user);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000, 
+        });
+
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/oauth/callback?accessToken=${accessToken}`);
     }
 
     @Get('verify-email')
