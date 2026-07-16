@@ -9,6 +9,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GoogleAuthGuard } from './guards/googleAuth.guard';
 import type { Request,Response } from 'express';
 import { GithubGuard } from './guards/githubAuth.guard';
+import { JwtAuthGuard } from './guards/jwtAuth.guard';
 
 
 @Controller('auth')
@@ -38,7 +39,6 @@ export class AuthController {
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
         return {accessToken};
@@ -51,7 +51,6 @@ export class AuthController {
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
         return {accessToken};
@@ -59,14 +58,17 @@ export class AuthController {
 
     @Post('refresh')
     async refresh(@Req()req: Request){
-        console.log('Refresh token from cookie:', req.cookies.refreshToken);
+        console.log('Refresh request received. Refresh token from cookie:', req.cookies.refreshToken);
         return this.authService.refresh(req.cookies.refreshToken);
     }
 
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(JwtAuthGuard)
     @Post('logout')
     async logout(@Req() req: Request){
-        return this.authService.logout(req.cookies.refreshToken);
+        console.log('5. [Controller] Executing logout! Cookies:', req.cookies?.refreshToken);
+        const result = await this.authService.logout(req.cookies.refreshToken);
+        console.log('Logout result:', result);
+        return result;
     }
 
     @Post('forgot-password')
@@ -92,7 +94,6 @@ export class AuthController {
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -111,7 +112,6 @@ export class AuthController {
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000, 
         });
 

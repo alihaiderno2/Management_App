@@ -30,5 +30,6 @@ import { TasksModule } from '../tasks/tasks.module';
 ],
   controllers: [AuthController],
   providers: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy],
+  exports: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy],
 })
 export class AuthModule {}
