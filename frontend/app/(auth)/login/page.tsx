@@ -4,18 +4,8 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
-
-function validateEmail(email: string): string {
-  if (!email) return 'Email is required';
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) return 'Enter a valid email';
-  return '';
-}
-
-function validatePassword(password: string): string {
-  if (!password) return 'Password is required';
-  return '';
-}
+import { validateEmail, validatePassword } from '@/lib/validators';
+import { Button } from '@/app/componenets/ui/Button';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -148,29 +138,22 @@ export default function LoginPage() {
 
             {serverError && <p className="text-sm text-[#C1443A]">{serverError}</p>}
 
-            {/* #1B1D1F — dark button, on the light card, for contrast */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-lg bg-[#1B1D1F] hover:bg-[#111214] text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button variant="primary" type = "submit" disabled={isSubmitting} >
               {isSubmitting ? 'Logging in…' : needsTwoFactor ? 'Verify & log in' : 'Log in'}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-[#E4E4E1] flex flex-col gap-2">
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
-              className="w-full text-center rounded-lg border border-[#1B1D1F] text-sm text-[#1B1D1F] py-2.5 hover:bg-[#F5F5F4] transition-colors"
-            >
+              <Button variant="secondary" onClick={() => {
+                window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+              }}>
               Continue with Google
-            </a>
-            <a
-              href={'http://localhost:3001/v1/auth/github' }
-              className="w-full text-center rounded-lg border border-[#1B1D1F] text-sm text-[#1B1D1F] py-2.5 hover:bg-[#F5F5F4] transition-colors"
-            >
+              </Button>
+              <Button variant="secondary" onClick={() => {
+                window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
+              }}>
               Continue with GitHub
-            </a>
+              </Button>
           </div>
         </div>
 

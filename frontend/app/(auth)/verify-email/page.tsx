@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { Button } from '@/app/componenets/ui/Button';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -51,12 +52,9 @@ function VerifyEmailContent() {
             <p className="text-sm text-[#6B6F76] mb-6">
               We've sent a verification link to your inbox. Please click the link to verify your account.
             </p>
-            <button 
-              onClick={() => router.push('/login')}
-              className="w-full rounded-lg border border-[#E4E4E1] bg-white hover:bg-[#F5F5F4] text-[#1B1D1F] text-sm font-medium py-2.5 transition-colors"
-            >
+            <Button variant="secondary" onClick={() => router.push('/login')}>
               Back to log in
-            </button>
+            </Button>
           </>
         )}
 
@@ -93,12 +91,9 @@ function VerifyEmailContent() {
             </div>
             <h1 className="text-xl font-semibold text-[#1B1D1F] mb-2">Verification Failed</h1>
             <p className="text-sm text-[#6B6F76] mb-6">{errorMessage}</p>
-            <button
-              onClick={() => router.push('/register')}
-              className="w-full rounded-lg bg-[#1B1D1F] hover:bg-[#111214] text-white text-sm font-medium py-2.5 transition-colors"
-            >
+            <Button variant="primary" onClick={() => router.push('/register')}>
               Sign up again
-            </button>
+            </Button>
           </>
         )}
 

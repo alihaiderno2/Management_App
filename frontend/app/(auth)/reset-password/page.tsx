@@ -3,20 +3,8 @@
 import { useState, FormEvent, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
-
-function validateEmail(email: string): string {
-  if (!email) return 'Email is required';
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) return 'Enter a valid email';
-  return '';
-}
-
-function validatePassword(password: string, confirm: string): string {
-  if (!password) return 'Password is required';
-  if (password.length < 8) return 'Password must be at least 8 characters';
-  if (password !== confirm) return 'Passwords do not match';
-  return '';
-}
+import { Button } from '@/app/componenets/ui/Button';
+import { validateEmail, validateConfirmPassword as validatePassword } from '@/lib/validators';
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -99,12 +87,9 @@ function ResetPasswordContent() {
             <p className="text-sm text-[#6B6F76] mb-6">
               If an account exists for {email}, we have sent a password reset link.
             </p>
-            <button 
-              onClick={() => router.push('/login')}
-              className="w-full rounded-lg border border-[#E4E4E1] bg-white hover:bg-[#F5F5F4] text-[#1B1D1F] text-sm font-medium py-2.5 transition-colors"
-            >
+            <Button variant="secondary" onClick={() => router.push('/login')}>
               Return to log in
-            </button>
+            </Button>
           </div>
         )}
 
@@ -134,18 +119,14 @@ function ResetPasswordContent() {
 
               {serverError && <p className="text-sm text-[#C1443A]">{serverError}</p>}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-lg bg-[#1B1D1F] hover:bg-[#111214] text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-              >
+              <Button variant="primary" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending link...' : 'Send reset link'}
-              </button>
+              </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-[#9A9CA3]">
               Remembered your password?{' '}
-              <a href="/login" className="text-[#F5F4F0] hover:text-[#1B1D1F] font-medium underline transition-colors">
+              <a href="/login" className="text-[#0F7B6C] hover:text-[#1B1D1F] font-medium underline transition-colors">
                 Log in
               </a>
             </p>
@@ -163,12 +144,9 @@ function ResetPasswordContent() {
             <p className="text-sm text-[#6B6F76] mb-6">
               Your password has been successfully reset. You can now log in with your new credentials.
             </p>
-            <button
-              onClick={() => router.push('/login')}
-              className="w-full rounded-lg bg-[#1B1D1F] hover:bg-[#111214] text-white text-sm font-medium py-2.5 transition-colors"
-            >
+            <Button variant= "primary" onClick={() => router.push('/login')}>
               Go to login
-            </button>
+            </Button>
           </div>
         )}
 
@@ -213,13 +191,9 @@ function ResetPasswordContent() {
 
               {serverError && <p className="text-sm text-[#C1443A]">{serverError}</p>}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-lg bg-[#1B1D1F] hover:bg-[#111214] text-white text-sm font-medium py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-              >
+              <Button variant="primary" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Updating...' : 'Reset Password'}
-              </button>
+              </Button>
             </form>
           </>
         )}
