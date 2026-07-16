@@ -32,6 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             this.accountActivationQueue.add('unblock-user', {userId :payload.userId}, {delay: 1 * 60 * 1000});
             throw new UnauthorizedException('Invalid token type - Account blocked for 15 minutes');
         }
+        console.log('JWT payload validated:', payload);
         return {userId: payload.userId, email: payload.email};
     }
 }

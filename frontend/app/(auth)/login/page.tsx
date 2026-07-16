@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { validateEmail, validatePassword } from '@/lib/validators';
 import { Button } from '@/app/componenets/ui/Button';
+import { Input } from '@/app/componenets/ui/Input';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,7 +46,9 @@ export default function LoginPage() {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
+      // meResponse.data is the plain user object now — matches auth-store's User type.
       setSession(meResponse.data, accessToken);
+      console.log(meResponse.data, accessToken);
       router.push('/dashboard');
     } catch (err: any) {
       const message = err?.response?.data?.message;
@@ -77,7 +80,7 @@ export default function LoginPage() {
               >
                 Email
               </label>
-              <input
+              {/* <input
                 id="email"
                 type="email"
                 autoComplete="email"
@@ -85,7 +88,41 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-[#E4E4E1] bg-[#F5F5F4] px-3 py-2 text-sm text-[#1B1D1F] placeholder:text-[#9A9CA3] focus:outline-none focus:ring-2 focus:ring-[#0F7B6C] focus:border-[#0F7B6C] transition-colors"
                 placeholder="you@example.com"
-              />
+              /> */}
+              {/* export const Input = forwardRef<HTMLInputElement, InputProps>(
+                  ({ label, error, hint, id, className = '', ...props }, ref) => {
+                    return (
+                      <div>
+                        <label
+                          htmlFor={id}
+                          className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5"
+                        >
+                          {label}
+                        </label>
+                        <input
+                          ref={ref}
+                          id={id}
+                          className={`w-full rounded-lg border border-[#E4E4E1] bg-[#F5F5F4] px-3 py-2 text-sm text-[#1B1D1F] placeholder:text-[#9A9CA3] focus:outline-none focus:ring-2 focus:ring-[#0F7B6C] focus:border-[#0F7B6C] transition-colors ${className}`}
+                          {...props}
+                        />
+                        {error && <p className="mt-1 text-xs text-[#C1443A]">{error}</p>}
+                        {!error && hint && <p className="mt-1 text-xs text-[#6B6F76]">{hint}</p>}
+                      </div>
+                    );
+                  }
+                );
+                 */}
+              <Input
+              id="email"
+              label="Email"
+              type ="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="placeholder:text-[#9A9CA3]"
+
+              >
+              </Input>
               {emailError && <p className="mt-1 text-xs text-[#C1443A]">{emailError}</p>}
             </div>
 
