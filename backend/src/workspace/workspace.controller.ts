@@ -1,8 +1,10 @@
-import { Controller, Post, UseGuards,Req, Body,Get, Param, Delete} from '@nestjs/common';
+import { Controller, Post, UseGuards,Req, Body,Get, Param, Delete, Patch} from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
 import { JwtAuthGuard } from '../auth/guards/jwtAuth.guard';
 import { WorkspaceGuard } from '../auth/guards/workspace.guard';
+import { WorkspaceOwnerGuard } from '../auth/guards/workspaceOwner.guard';
+import { UpdateMemberRoleDto } from './dto/UpdateMemberRole.dto';
 
 @Controller('workspace')
 export class WorkspaceController {
@@ -21,8 +23,7 @@ export class WorkspaceController {
         return await this.workspaceService.getAllUserWorkspaces(req.user.userId);
     }
 
-    @UseGuards(JwtAuthGuard)
-    @UseGuards(WorkspaceGuard)
+    @UseGuards(JwtAuthGuard,WorkspaceGuard)
     @Get(':id')
     async getWorkspace(@Req() req: { user: { userId: string, email: string } }, @Param('id') id: string) {
         return await this.workspaceService.getWorkspace(req.user.userId, id);
@@ -42,5 +43,17 @@ export class WorkspaceController {
             return {success: false, message: memebers.message};
         }
         return {success: true, members: memebers};
+    }
+
+    @UseGuards(JwtAuthGuard, WorkspaceGuard)
+    @Delete(':id/disable')
+    async disableWorkspaceForUser(@Req() req: {user : {userId: string, email: string}}, @Param('id') id: string) {
+        return await this.workspaceService.disableWorkspaceForUser(req.user.userId, id);
+    }
+
+    @UseGuards(JwtAuthGuard, WorkspaceOwnerGuard)
+    @Patch(':id/members/:userId')
+    async updateMemberRole(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Param('userId') userId: string, @Body() body: UpdateMemberRoleDto) {
+        return await this.workspaceService.updateMemberRole(req.user.userId, workspaceId, userId, body.role);
     }
 }

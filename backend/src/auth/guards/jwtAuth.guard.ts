@@ -18,12 +18,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   // 🌟 Add logging here to see exactly why it's blocking the request
   handleRequest(err, user, info, context) {
-    console.log('2. [Guard handleRequest] Error:', err);
-    console.log('3. [Guard handleRequest] User:', user);
-    console.log('4. [Guard handleRequest] Info (Passport Error):', info);
 
     if (err || !user) {
-      console.log('❌ Request blocked in Guard! Throwing UnauthorizedException.');
       throw err || new UnauthorizedException('Authentication failed in guard.');
     }
     

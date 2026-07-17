@@ -3,7 +3,7 @@ import { CanActivate, ExecutionContext } from "@nestjs/common";
 import { WorkspaceService } from "../../workspace/workspace.service";
 
 @Injectable()
-export class WorkspaceGuard implements CanActivate {
+export class WorkspaceOwnerGuard implements CanActivate {
 
     constructor(private readonly workspaceService: WorkspaceService) {}
     async canActivate(context: ExecutionContext) : Promise<boolean> {
@@ -13,17 +13,15 @@ export class WorkspaceGuard implements CanActivate {
         const workspaceId = req.params.id;
 
         const workspace = await this.workspaceService.getWorkspace(userId, workspaceId);
+        console.log(`\n➡️ [WorkspaceOwnerGuard] Checking if user ${userId} is the owner of workspace ${workspaceId}`, workspace);
 
         if(!workspace){
-            console.log(`❌ [WorkspaceGuard] Workspace not found or user does not have access.`);
             return false;
         }
         if(workspace instanceof Error){
-            console.log(`❌ [WorkspaceGuard] Error retrieving workspace: ${workspace.message}`);
             return false;
         }
         if(workspace.disabled){
-            console.log(`❌ [WorkspaceGuard] Workspace is disabled.`);
             return false;
         }
 
