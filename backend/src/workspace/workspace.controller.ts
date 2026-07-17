@@ -81,4 +81,10 @@ export class WorkspaceController {
     async deleteWorkspaceInvite(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Param('inviteId') inviteId: string) {
         return await this.workspaceService.deleteWorkspaceInvite(workspaceId, inviteId);
     }
+
+    @UseGuards(JwtAuthGuard)
+    @Post(':id/invites/:token/accept')
+    async acceptWorkspaceInvite(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Param('token') token: string) {
+        return await this.workspaceService.acceptWorkspaceInvite(req.user.email, workspaceId, token);
+    }
 }

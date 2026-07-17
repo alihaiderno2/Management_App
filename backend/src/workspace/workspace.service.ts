@@ -218,4 +218,38 @@ export class WorkspaceService {
         });
         return result;
     }
+
+    async acceptWorkspaceInvite(email: string, workspaceId: string, token: string){
+        const invite = await this.prisma.workspaceInvite.findFirst({
+            where: { email, workspaceId, acceptedAt: null },
+        });
+
+        if(!invite){
+            throw new NotFoundException('Invite not found or already accepted');
+        }
+        const decodedToken = await this.jwtService.verifyAsync(token);
+        
+        if(decodedToken.type !== 'workspace_invite'){
+            throw new UnauthorizedException('Invalid token type');
+        }
+
+        if(decodedToken.userId !== invite.invitedById){
+            throw new UnauthorizedException('Token does not match the invite');
+        }
+
+        const workspaceMembership = await this.prisma.workspaceMember.create({
+            data: {
+                userId: decodedToken.userId,
+                workspaceId,
+                role: invite.role,
+            }
+        });
+
+        await this.prisma.workspaceInvite.update({
+            where: { id: invite.id },
+            data: { acceptedAt: new Date() },
+        });
+
+        return {message: 'Invite accepted successfully', workspaceMembership};
+    }
 }
