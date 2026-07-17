@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwtAuth.guard';
 import { WorkspaceGuard } from '../auth/guards/workspace.guard';
 import { WorkspaceOwnerGuard } from '../auth/guards/workspaceOwner.guard';
 import { UpdateMemberRoleDto } from './dto/UpdateMemberRole.dto';
+import { InviteBodyDto } from './dto/inviteBody.dto';
 
 @Controller('workspace')
 export class WorkspaceController {
@@ -55,5 +56,29 @@ export class WorkspaceController {
     @Patch(':id/members/:userId')
     async updateMemberRole(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Param('userId') userId: string, @Body() body: UpdateMemberRoleDto) {
         return await this.workspaceService.updateMemberRole(req.user.userId, workspaceId, userId, body.role);
+    }
+
+    @UseGuards(JwtAuthGuard, WorkspaceOwnerGuard)
+    @Delete(':id/members/:userId')
+    async removeMemberFromWorkspace(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Param('userId') userId: string) {
+        return await this.workspaceService.removeMemberFromWorkspace( workspaceId, userId);
+    }
+
+    @UseGuards(JwtAuthGuard, WorkspaceOwnerGuard)
+    @Post(':id/invite')
+    async inviteMemberToWorkspace(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Body() body: InviteBodyDto) {
+        return await this.workspaceService.inviteMemberToWorkspace(req.user.userId, workspaceId, body.email, body.role);
+    }
+
+    @UseGuards(JwtAuthGuard, WorkspaceOwnerGuard)
+    @Get(':id/invites')
+    async getWorkspaceInvites(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string) {
+        return await this.workspaceService.getWorkspaceInvites(workspaceId);
+    }
+
+    @UseGuards(JwtAuthGuard, WorkspaceOwnerGuard)
+    @Delete(':id/invites/:inviteId')
+    async deleteWorkspaceInvite(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Param('inviteId') inviteId: string) {
+        return await this.workspaceService.deleteWorkspaceInvite(workspaceId, inviteId);
     }
 }
