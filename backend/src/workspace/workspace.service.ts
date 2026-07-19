@@ -63,11 +63,28 @@ export class WorkspaceService {
         });
 
         if(!workspaceMembership){
-            return new Error('Workspace not found');
+            throw new NotFoundException('Workspace not found');
         }
-        return workspaceMembership.workspace.ownerId === userId ? workspaceMembership.workspace : null;
+        return workspaceMembership.workspace;
     }
 
+    // Owner getting the workspace
+    async getWorkspaceOwnerForGuard(userId: string, workspaceId: string){
+        const workspaceMembership = await this.prisma.workspaceMember.findFirst({
+            where :{
+                userId : userId,
+                workspaceId : workspaceId
+            }, include:{
+                workspace: true,
+            }
+        });
+
+        if(!workspaceMembership){
+            return new NotFoundException('Workspace not found');
+        }
+
+        return workspaceMembership.workspace.ownerId === userId ? workspaceMembership.workspace : null;
+    }
     async deleteWorkspace(userId: string, workspaceId: string){
         const workspace = await this.prisma.workspace.findUnique({
             where: { id: workspaceId },

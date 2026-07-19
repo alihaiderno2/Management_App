@@ -12,7 +12,7 @@ export class WorkspaceOwnerGuard implements CanActivate {
         const userId = req.user.userId;
         const workspaceId = req.params.id;
 
-        const workspace = await this.workspaceService.getWorkspace(userId, workspaceId);
+        const workspace = await this.workspaceService.getWorkspaceOwnerForGuard(userId, workspaceId);
         console.log(`\n➡️ [WorkspaceOwnerGuard] Checking if user ${userId} is the owner of workspace ${workspaceId}`, workspace);
 
         if(!workspace){
