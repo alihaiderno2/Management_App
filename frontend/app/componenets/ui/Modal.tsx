@@ -26,12 +26,12 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ backgroundColor: 'rgba(20, 22, 26, 0.6)' }}
-      onClick={onClose} // click outside the card closes it
+      onClick={onClose}
     >
       <div
         className="w-full max-w-md rounded-2xl p-6 shadow-xl"
         style={{ backgroundColor: '#FFFFFF' }}
-        onClick={(e) => e.stopPropagation()} // don't let clicks inside the card bubble up and close it
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[#1B1D1F]">{title}</h2>
