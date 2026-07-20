@@ -13,7 +13,7 @@ import { EmailModule } from '../email/email.module';
 import { RedisModule } from '../redis/redis.module';
 import { BullModule } from '@nestjs/bullmq';
 import { TasksModule } from '../tasks/tasks.module';
-import {WorkspaceGuard} from "./guards/workspace.guard";
+import {WorkspaceMemberGuard} from "./guards/workspace.guard";
 import {WorkspaceOwnerGuard} from "./guards/workspaceOwner.guard";
 import {WorkspaceModule} from "../workspace/workspace.module";
 
@@ -32,7 +32,7 @@ import {WorkspaceModule} from "../workspace/workspace.module";
   }),TwoFactorModule,WorkspaceModule,
 ],
   controllers: [AuthController],
-  providers: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy,WorkspaceGuard, WorkspaceOwnerGuard],
+  providers: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy,WorkspaceMemberGuard, WorkspaceOwnerGuard],
   exports: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy,JwtModule],
 })
 export class AuthModule {}

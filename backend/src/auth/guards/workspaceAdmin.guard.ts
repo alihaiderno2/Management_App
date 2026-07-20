@@ -1,20 +1,18 @@
-import { Injectable } from "@nestjs/common";
-import { CanActivate, ExecutionContext } from "@nestjs/common";
+import { Injectable, CanActivate, ExecutionContext } from "@nestjs/common";
 import { WorkspaceService } from "../../workspace/workspace.service";
 
 @Injectable()
-export class WorkspaceOwnerGuard implements CanActivate {
-
+export class WorkspaceAdminGuard implements CanActivate {
     constructor(private readonly workspaceService: WorkspaceService) {}
-    async canActivate(context: ExecutionContext) : Promise<boolean> {
-        const req = context.switchToHttp().getRequest();
 
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const req = context.switchToHttp().getRequest();
         const userId = req.user.userId;
         const workspaceId = req.params.id;
 
         const membership = await this.workspaceService.getMembership(userId, workspaceId);
         if (!membership) return false;
- 
-        return membership.role === 'OWNER';
+
+        return membership.role === 'OWNER' || membership.role === 'ADMIN';
     }
 }

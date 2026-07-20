@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundError } from 'rxjs';
 import { Role } from '@prisma/client';
 import {EmailService} from "../email/email.service";
 import { JwtService } from '@nestjs/jwt';
@@ -34,8 +33,7 @@ export class WorkspaceService {
 
     async getAllUserWorkspaces(userId: string) {
         const workspaces = await this.prisma.workspaceMember.findMany({
-            where:{userId,
-                disabled: false
+            where:{userId
             },
             include:{
                 workspace: {
@@ -46,7 +44,7 @@ export class WorkspaceService {
                 }
             }
         });
-        return workspaces;
+        return workspaces.map(wm => wm.workspace);
     }
 
     // Returning the data of the workspace
@@ -66,6 +64,19 @@ export class WorkspaceService {
             throw new NotFoundException('Workspace not found');
         }
         return workspaceMembership.workspace;
+    }
+    
+    async getMembership(userId: string, workspaceId: string){
+        const workspaceMembership = await this.prisma.workspaceMember.findFirst({
+            where :{
+                userId : userId,
+                workspaceId : workspaceId
+            }
+        });
+        if(!workspaceMembership){
+            throw new NotFoundException('Workspace membership not found');
+        }
+        return workspaceMembership;
     }
 
     // Owner getting the workspace
@@ -138,10 +149,30 @@ export class WorkspaceService {
         const users = await this.prisma.user.findMany({
             where: { id: { in: membersIds } },
         });
-        return users.map(user => ({ id: user.id, name: user.name, email: user.email }));
+        return users.map(user => ({ id: user.id, name: user.name, email: user.email, role : workspace.members.find(member => member.userId === user.id)?.role }));
     }
 
     async updateMemberRole(userId: string, workspaceId: string, memberId: string, role: Role){
+
+        if(userId === memberId){
+            throw new UnauthorizedException('You cannot change your own role');
+        }
+
+        if(role === 'OWNER'){
+            throw new UnauthorizedException('You cannot assign the OWNER role to another member');
+        }
+
+        const userRole = await this.prisma.workspaceMember.findFirst({
+            where: {
+                userId,
+                workspaceId,
+            }
+        });
+
+        if(userRole?.role !== 'OWNER' && role === 'ADMIN'){
+            throw new UnauthorizedException('Invalid role');
+        }
+
         const workspaceMembership = await this.prisma.workspaceMember.update({
         where: {
             workspaceId_userId: {
@@ -153,10 +184,39 @@ export class WorkspaceService {
             role,
         },
         });
+        if(!workspaceMembership){
+            throw new NotFoundException('Workspace membership not found');
+        }
+
+
         return workspaceMembership;
     }
 
-    async removeMemberFromWorkspace(workspaceId: string, memberId: string){
+    async removeMemberFromWorkspace(userId : string, workspaceId: string, memberId: string){
+
+        if(userId === memberId){
+            throw new UnauthorizedException('You cannot remove yourself from the workspace');
+        }
+
+        const userRole = await this.prisma.workspaceMember.findFirst({
+            where: {
+                userId,
+                workspaceId,
+            }
+        });
+        const memberRole = await this.prisma.workspaceMember.findFirst({
+            where: {
+                userId: memberId,
+                workspaceId,
+            }
+        });
+
+        if(userRole?.role === 'ADMIN' && memberRole?.role === 'OWNER'){
+            throw new UnauthorizedException('You cannot remove the owner of the workspace');
+        }
+        if(memberRole?.role === 'ADMIN' && userRole?.role !== 'ADMIN'){
+            throw new UnauthorizedException('You cannot remove an admin from the workspace');
+        }
         const workspaceMembership = await this.prisma.workspaceMember.update({
             where:{
                 workspaceId_userId: {
@@ -166,6 +226,7 @@ export class WorkspaceService {
             },
             data: {
                 disabled: true,
+                diabledBy: memberId,
             }
             });
         return workspaceMembership;

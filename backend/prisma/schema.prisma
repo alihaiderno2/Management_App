@@ -73,6 +73,7 @@ model User {
   workspaceMemberships WorkspaceMember[]
   chatRooms ChatRoomParticipant[]
   sentInvites WorkspaceInvite[]
+  disabledWorkspaceMemberships WorkspaceMember[] @relation("DisabledByUser")
 }
 model RefreshToken{
   id         String   @id @default(uuid())
@@ -114,9 +115,11 @@ model WorkspaceMember {
   role        Role     @default(USER)
   disabled    Boolean  @default(false)
   joinedAt    DateTime @default(now())
+  diabledBy String?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id])
+  disabledByUser User? @relation("DisabledByUser", fields: [diabledBy], references: [id])
 
   @@unique([workspaceId, userId])
 }
