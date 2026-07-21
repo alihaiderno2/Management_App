@@ -9,6 +9,7 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
+  const redirectUrl = searchParams.get('redirect') || '';
 
   const [status, setStatus] = useState<'pending' | 'verifying' | 'success' | 'error'>('pending');
   const [errorMessage, setErrorMessage] = useState('');
@@ -26,7 +27,11 @@ function VerifyEmailContent() {
         setStatus('success');
 
         setTimeout(() => {
-          router.push('/login');
+          if (redirectUrl) {
+            router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+          } else {
+            router.push('/login');
+          }
         }, 3000);
       } catch (err: any) {
         setStatus('error');

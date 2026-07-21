@@ -1,45 +1,53 @@
 'use client';
 
 import { useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { useRouter, useSearchParams} from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { apiClient } from '@/lib/api-client'; // Assuming you fetch the user details here
 
 function OAuthCallbackContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setSession = useAuthStore((state) => state.setSession);
-  
+
   const accessToken = searchParams.get('accessToken');
 
   useEffect(() => {
-    if (!accessToken) {
-      router.push('/login');
-      return;
-    }
+    if (!accessToken) return;
 
-    const hydrateSession = async () => {
+    const completeLogin = async () => {
       try {
+        // 1. Fetch user data using the new token
         const meResponse = await apiClient.get('/user/me', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
 
+        // 2. Set the Zustand session
         setSession(meResponse.data, accessToken);
-        router.push('/dashboard');
-      } catch (error) {
-        console.error('OAuth session hydration failed:', error);
-        router.push('/login?error=oauth_failed');
+
+        // 3. Safely read from sessionStorage (it is perfectly safe inside useEffect!)
+        const savedRedirect = sessionStorage.getItem('oauth_redirect');
+        sessionStorage.removeItem('oauth_redirect');
+
+        // 4. Redirect them to where they belong!
+        if (savedRedirect) {
+          router.push(savedRedirect);
+        } else {
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        console.error('Failed to fetch user data', err);
+        router.push('/login');
       }
     };
 
-    hydrateSession();
+    completeLogin();
   }, [accessToken, router, setSession]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center font-sans" style={{ backgroundColor: '#14161A' }}>
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-white mb-4"></div>
-        <p className="text-sm text-[#9A9CA3] tracking-wide">Authenticating securely...</p>
-    </main>
+    <div className="min-h-screen flex items-center justify-center bg-[#14161A]">
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-white"></div>
+    </div>
   );
 }
 

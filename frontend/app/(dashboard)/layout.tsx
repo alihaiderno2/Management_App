@@ -1,12 +1,14 @@
 "use client";
 
-import {useEffect, useState} from 'react';
-import {useRouter} from 'next/navigation';
-import {apiClient} from '@/lib/api-client';
-import {useAuthStore} from '@/store/auth-store';
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation'; 
+import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
+import Link from 'next/link'; 
 
 export default function DashboardLayout({children} : {children: React.ReactNode}) {
     const router = useRouter();
+    const pathname = usePathname();
     const {user,accessToken,isAuthenticated, setSession, clearSession} = useAuthStore();
     const [isChecking, setIsChecking] = useState(true);
     
@@ -71,15 +73,36 @@ export default function DashboardLayout({children} : {children: React.ReactNode}
                     </span>
 
                     <nav className=" md:flex md:flex-col md:gap-1 md:mt-2">
-                        <a href="/dashboard" className="rounded-lg px-3 py-2 text-sm text-[#F5F4F0] hover:bg-white/5 transition-colors">
-                        Dashboard
-                        </a>
-                        <a href="/workspace" className="rounded-lg px-3 py-2 text-sm text-[#9A9CA3] hover:bg-white/5 hover:text-[#F5F4F0] transition-colors">
-                        Workspaces
-                        </a>
-                        <a href="/settings" className="rounded-lg px-3 py-2 text-sm text-[#9A9CA3] hover:bg-white/5 hover:text-[#F5F4F0] transition-colors">
-                        Settings
-                        </a>
+                        <Link 
+                            href="/dashboard" 
+                            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                                pathname === '/dashboard' 
+                                    ? 'text-[#F5F4F0] bg-white/10' 
+                                    : 'text-[#9A9CA3] hover:bg-white/5 hover:text-[#F5F4F0]'
+                            }`}
+                        >
+                            Dashboard
+                        </Link>
+                        <Link 
+                            href="/workspace" 
+                            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                                pathname.startsWith('/workspace') 
+                                    ? 'text-[#F5F4F0] bg-white/10' 
+                                    : 'text-[#9A9CA3] hover:bg-white/5 hover:text-[#F5F4F0]'
+                            }`}
+                        >
+                            Workspaces
+                        </Link>
+                        <Link 
+                            href="/settings" 
+                            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                                pathname.startsWith('/settings') 
+                                    ? 'text-[#F5F4F0] bg-white/10' 
+                                    : 'text-[#9A9CA3] hover:bg-white/5 hover:text-[#F5F4F0]'
+                            }`}
+                        >
+                            Settings
+                        </Link>
                     </nav>
                 </div>
 

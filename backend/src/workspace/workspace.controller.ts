@@ -85,7 +85,12 @@ export class WorkspaceController {
 
     @UseGuards(JwtAuthGuard)
     @Post(':id/invites/:token/accept')
-    async acceptWorkspaceInvite(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string, @Param('token') token: string) {
-        return await this.workspaceService.acceptWorkspaceInvite(req.user.email, workspaceId, token);
+    async acceptWorkspaceInvite(@Req() req: { user: { userId: string, email: string } }, @Param('id') workspaceId: string, @Param('token') token: string) {
+        return await this.workspaceService.acceptWorkspaceInvite(req.user.userId, req.user.email, workspaceId, token);
+    }
+
+    @Get('invite-details/:token')
+    async getInviteDetails(@Param('token') token: string) {
+        return await this.workspaceService.getInviteDetailsByToken(token);
     }
 }

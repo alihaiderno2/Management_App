@@ -1,18 +1,26 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, FormEvent, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { validateEmail, validatePassword } from '@/lib/validators';
 import { Button } from '@/app/componenets/ui/Button';
 import { Input } from '@/app/componenets/ui/Input';
 
-export default function LoginPage() {
+ function LoginContent() {
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
+  const searchParams = useSearchParams();
 
-  const [email, setEmail] = useState('');
+  const rawRedirect = searchParams.get('redirect');
+  const redirectUrl = rawRedirect ? decodeURIComponent(rawRedirect) : '/dashboard';
+  if(!redirectUrl.startsWith('/')) {
+    throw new Error('Invalid redirect URL');
+  }
+  const queryEmail = searchParams.get('email') || '';
+
+  const [email, setEmail] = useState(queryEmail);
   const [password, setPassword] = useState('');
   const [twoFACode, setTwoFACode] = useState('');
 
@@ -22,6 +30,10 @@ export default function LoginPage() {
 
   const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (queryEmail) setEmail(queryEmail);
+  }, [queryEmail]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -46,10 +58,11 @@ export default function LoginPage() {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
-      // meResponse.data is the plain user object now — matches auth-store's User type.
       setSession(meResponse.data, accessToken);
-      console.log(meResponse.data, accessToken);
-      router.push('/dashboard');
+      console.log(redirectUrl);
+      setTimeout(() => {
+        router.push(redirectUrl);
+      }, 50);
     } catch (err: any) {
       const message = err?.response?.data?.message;
       if (message === 'Two Factor Authentication code is required') {
@@ -63,7 +76,6 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#14161A' }}>
       <div className="w-full max-w-sm">
 
         <div className="rounded-2xl p-8 shadow-xl shadow-black/40" style={{ backgroundColor: '#FFFFFF' }}>
@@ -114,7 +126,6 @@ export default function LoginPage() {
                  */}
               <Input
               id="email"
-              label="Email"
               type ="email"
               placeholder="you@example.com"
               value={email}
@@ -181,26 +192,38 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-[#E4E4E1] flex flex-col gap-2">
-              <Button variant="secondary" onClick={() => {
-                window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
-              }}>
+            <Button variant="secondary" onClick={() => {
+              sessionStorage.setItem('oauth_redirect', redirectUrl);
+              window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+            }}>
               Continue with Google
-              </Button>
-              <Button variant="secondary" onClick={() => {
-                window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
-              }}>
+            </Button>
+            
+            <Button variant="secondary" onClick={() => {
+              sessionStorage.setItem('oauth_redirect', redirectUrl);
+              window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
+            }}>
               Continue with GitHub
-              </Button>
+            </Button>
           </div>
         </div>
 
         <p className="mt-6 text-center text-sm text-[#9A9CA3]">
           Don't have an account?{' '}
-          <a href="/register" className="text-[#F5F4F0] hover:text-white font-medium underline">
+          <a href={`/register?email=${encodeURIComponent(queryEmail)}&redirect=${encodeURIComponent(redirectUrl)}`} className="text-[#F5F4F0] hover:text-white font-medium underline">
             Register
           </a>
         </p>
       </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#14161A' }}>
+      <Suspense fallback={<div className="w-full max-w-sm rounded-2xl p-8 shadow-xl bg-white min-h-[400px] animate-pulse" />}>
+        <LoginContent />
+      </Suspense>
     </main>
   );
 }

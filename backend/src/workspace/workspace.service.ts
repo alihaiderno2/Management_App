@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 import {EmailService} from "../email/email.service";
@@ -121,7 +121,7 @@ export class WorkspaceService {
         });
 
         if(!workspace){
-            throw new UnauthorizedException('Workspace not found');
+            throw new NotFoundException('Workspace not found');
         }
 
         if(workspace.ownerId !== userId){
@@ -232,36 +232,54 @@ export class WorkspaceService {
         return workspaceMembership;
     }
 
-    async inviteMemberToWorkspace(userId: string, workspaceId: string, email: string, role: Role){
+    async inviteMemberToWorkspace(userId: string, workspaceId: string, email: string, role: Role) {
+        const sender = await this.prisma.workspaceMember.findFirst({
+             where: { userId, workspaceId
+             }
+            });
+        if (role === 'ADMIN' && sender?.role !== 'OWNER') {
+            throw new UnauthorizedException('Only the workspace owner can invite someone as an admin');
+        }
 
-        const token = await this.jwtService.signAsync(
-        {userId , type : 'workspace_invite'
+        const alreadyInvited = await this.prisma.workspaceInvite.findFirst({
+            where:{
+                workspaceId,
+                email,
+            }
         });
+        if(!!alreadyInvited){
+            throw new UnprocessableEntityException('Invite to this user has already been sent.');
+        }
+ 
+        const token = await this.jwtService.signAsync({ userId, type: 'workspace_invite' });
+ 
         const result = await this.emailService.sendEmail({
             recipients: [email],
             subject: 'You are invited to join a workspace',
-            text: `You have been invited to join the workspace with ID: ${workspaceId} as a ${role}. Please click the link below to accept the invitation.`,
-            html: `<p>You have been invited to join the workspace with ID: ${workspaceId} as a ${role}. Please click the link below to accept the invitation.</p><a href="http://localhost:3000/workspace/${workspaceId}/invite/accept?email=${email}&role=${role}">Accept Invitation</a>`,
-        })
-        if(!result.success){
-            return {message: 'Error sending invitation email', error: result.message};
-        }
+            text: `You have been invited to join the workspace as a ${role}.`,
+            html: `<p>You have been invited to join a workspace as a ${role}.</p><a href="http://localhost:3000/invite-accept?workspaceId=${workspaceId}&token=${token}">Accept Invitation</a>`,
+        });
+        console.log(`"http://localhost:3000/invite-accept?workspaceId=${workspaceId}&token=${token}`);
+        // if (!result.success) {
+        //     throw new UnprocessableEntityException('Failed to send email');        
+        // }
+ 
         const workspace = await this.prisma.workspace.update({
             where: { id: workspaceId },
-            data:{
-                invites:{
-                    create:{
+            data: {
+                invites: {
+                    create: {
                         email,
                         role,
                         token,
                         invitedById: userId,
-                        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),// 7 days from now
+                        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                     }
                 }
             }
         });
-
-        return {message: 'Invitation sent successfully', emailResult: result, workspace};
+ 
+        return { message: 'Invitation sent successfully', workspace };
     }
 
     async getWorkspaceInvites(workspaceId: string){
@@ -297,30 +315,32 @@ export class WorkspaceService {
         return result;
     }
 
-    async acceptWorkspaceInvite(email: string, workspaceId: string, token: string){
+    async acceptWorkspaceInvite(invitedUserId: string, email: string, workspaceId: string, token: string) {
         const invite = await this.prisma.workspaceInvite.findFirst({
-            where: { email, workspaceId, acceptedAt: null },
+            where: { token, acceptedAt: null },
         });
-
-        if(!invite){
-            throw new NotFoundException('Invite not found or already accepted');
-        }
-        const decodedToken = await this.jwtService.verifyAsync(token);
         
-        if(decodedToken.type !== 'workspace_invite'){
+        if (!invite) throw new NotFoundException('Invite not found or already accepted');
+
+        if (invite.email !== email) {
+            throw new UnauthorizedException('You must accept this invite using the email address it was sent to.');
+        }
+
+        const decodedToken = await this.jwtService.verifyAsync(token);
+        if (decodedToken.type !== 'workspace_invite') {
             throw new UnauthorizedException('Invalid token type');
         }
-
-        if(decodedToken.userId !== invite.invitedById){
-            throw new UnauthorizedException('Token does not match the invite');
+        
+        const existingMember = await this.prisma.workspaceMember.findFirst({
+            where: { userId: invitedUserId, workspaceId }
+        });
+        
+        if (existingMember) {
+            throw new UnprocessableEntityException('You are already a member of this workspace.');
         }
 
         const workspaceMembership = await this.prisma.workspaceMember.create({
-            data: {
-                userId: decodedToken.userId,
-                workspaceId,
-                role: invite.role,
-            }
+            data: { userId: invitedUserId, workspaceId, role: invite.role }
         });
 
         await this.prisma.workspaceInvite.update({
@@ -328,6 +348,50 @@ export class WorkspaceService {
             data: { acceptedAt: new Date() },
         });
 
-        return {message: 'Invite accepted successfully', workspaceMembership};
+        return { message: 'Invite accepted successfully', workspaceMembership };
+    }
+
+    async getInviteDetailsByToken(token: string) {
+        let decoded: { userId: string; type: string };
+        try {
+            decoded = await this.jwtService.verifyAsync(token);
+        } catch {
+            throw new UnauthorizedException('This invite link is invalid or has expired');
+        }
+        if (decoded.type !== 'workspace_invite') {
+            throw new UnauthorizedException('This invite link is invalid');
+        }
+ 
+        const invite = await this.prisma.workspaceInvite.findFirst({
+            where: { token, acceptedAt: null },
+            include: { workspace: { select: { name: true, id: true } } },
+        });
+        if (!invite) {
+            throw new NotFoundException('This invite was not found or has already been used');
+        }
+        if (invite.expiresAt < new Date()) {
+            throw new UnauthorizedException('This invite has expired');
+        }
+ 
+        return {
+            email: invite.email,
+            role: invite.role,
+            workspaceId: invite.workspace.id,
+            workspaceName: invite.workspace.name,
+        };
+    }
+
+    async pendingInvites(email :string){
+        const invites = await this.prisma.workspaceInvite.findMany({
+            where: { email, acceptedAt: null },
+            include: { workspace: { select: { name: true, id: true } } },
+        });
+        return invites.map(invite => ({
+            email: invite.email,
+            role: invite.role,
+            workspaceId: invite.workspace.id,
+            workspaceName: invite.workspace.name,
+            token: invite.token,
+        }));
     }
 }

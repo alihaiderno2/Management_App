@@ -282,4 +282,9 @@ async generateRefreshToken(userId : string,email : string, expiresIn: number){
     }});
     return token;
 }
+
+async checkEmailExists(email: string) {
+    const user = await this.userService.findByEmail(email);
+    return { exists: !!user };
+}
 }

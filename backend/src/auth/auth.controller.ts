@@ -124,4 +124,8 @@ export class AuthController {
         return this.authService.verifyEmail(token);
     }
 
+    @Get('check-email')
+    async checkEmail(@Query('email') email: string) {
+        return this.authService.checkEmailExists(email);
+    }
 }
