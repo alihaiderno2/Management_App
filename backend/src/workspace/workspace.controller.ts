@@ -93,4 +93,10 @@ export class WorkspaceController {
     async getInviteDetails(@Param('token') token: string) {
         return await this.workspaceService.getInviteDetailsByToken(token);
     }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('pending-invites')
+    async pendingInvites(@Req() req: { user: { userId: string, email: string } }) {
+        return await this.workspaceService.pendingInvites(req.user.email);
+    }
 }

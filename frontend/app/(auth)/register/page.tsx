@@ -46,7 +46,13 @@ function RegisterContent() {
     setIsSubmitting(true);
     try {
       const body = { name, email, password };
+      
+      if (redirectUrl && redirectUrl !== '/dashboard') {
+        localStorage.setItem('post_verify_redirect', redirectUrl);
+      }
+
       await apiClient.post('/auth/register', body);
+      
       if (redirectUrl && redirectUrl !== '/dashboard') {
         router.push(`/verify-email?redirect=${encodeURIComponent(redirectUrl)}`);
       } else {
@@ -135,14 +141,15 @@ function RegisterContent() {
             </Button>
           </form>
 
-          {/* Slightly reduced margin-top here from mt-6 to mt-5 */}
           <div className="mt-5 pt-5 border-t border-[#E4E4E1] flex flex-col gap-2">
             <Button variant="secondary" onClick={() => {
+              sessionStorage.setItem('oauth_redirect', redirectUrl);
               window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
             }}>
               Continue with Google
             </Button>
             <Button variant="secondary" onClick={() => {
+              sessionStorage.setItem('oauth_redirect', redirectUrl);
               window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
             }}>
               Continue with GitHub

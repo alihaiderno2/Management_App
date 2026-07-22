@@ -4,6 +4,7 @@ interface User {
     id: string;
     name: string;
     email: string;
+    twoFAEnabled: boolean;
 }
 
 interface AuthState {
@@ -19,7 +20,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     accessToken: null,
     isAuthenticated: false,
-    setSession: (user, accessToken) => set({ user, accessToken, isAuthenticated: true }),
+    isTwoFactorEnabled: false,
+    setSession: (user, accessToken) => set({ user, accessToken, isAuthenticated: true}),
     setAccessToken: (accessToken) => set({ accessToken }),
-    clearSession: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+    clearSession: () => set({ user: null, accessToken: null, isAuthenticated: false}),
 }));

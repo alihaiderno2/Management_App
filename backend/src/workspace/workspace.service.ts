@@ -149,7 +149,7 @@ export class WorkspaceService {
         const users = await this.prisma.user.findMany({
             where: { id: { in: membersIds } },
         });
-        return users.map(user => ({ id: user.id, name: user.name, email: user.email, role : workspace.members.find(member => member.userId === user.id)?.role }));
+        return users.map(user => ({ id: user.id, name: user.name, email: user.email, role : workspace.members.find(member => member.userId === user.id)?.role, disabled: workspace.members.find(member => member.userId === user.id)?.disabled }));
     }
 
     async updateMemberRole(userId: string, workspaceId: string, memberId: string, role: Role){
@@ -214,7 +214,7 @@ export class WorkspaceService {
         if(userRole?.role === 'ADMIN' && memberRole?.role === 'OWNER'){
             throw new UnauthorizedException('You cannot remove the owner of the workspace');
         }
-        if(memberRole?.role === 'ADMIN' && userRole?.role !== 'ADMIN'){
+        if(memberRole?.role === 'ADMIN' && (userRole?.role === 'ADMIN' || userRole?.role === 'USER') ){
             throw new UnauthorizedException('You cannot remove an admin from the workspace');
         }
         const workspaceMembership = await this.prisma.workspaceMember.update({
@@ -259,10 +259,9 @@ export class WorkspaceService {
             text: `You have been invited to join the workspace as a ${role}.`,
             html: `<p>You have been invited to join a workspace as a ${role}.</p><a href="http://localhost:3000/invite-accept?workspaceId=${workspaceId}&token=${token}">Accept Invitation</a>`,
         });
-        console.log(`"http://localhost:3000/invite-accept?workspaceId=${workspaceId}&token=${token}`);
-        // if (!result.success) {
-        //     throw new UnprocessableEntityException('Failed to send email');        
-        // }
+        if (!result.success) {
+            throw new UnprocessableEntityException('Failed to send email');        
+        }
  
         const workspace = await this.prisma.workspace.update({
             where: { id: workspaceId },

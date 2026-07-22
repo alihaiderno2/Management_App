@@ -20,6 +20,7 @@ interface Member {
   name: string;
   email: string;
     role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'USER';
+    disabled: boolean;
 }
 
 const RANK = { OWNER: 3, ADMIN: 2, MEMBER: 1 , USER : 1 };
@@ -154,6 +155,7 @@ export default function WorkspaceDetailPage() {
 
         <div>
           {members.map((member, i) => (
+            member.disabled ? null : (
             <div
               key={member.id}
               className={`flex items-center justify-between px-6 py-3 ${i !== members.length - 1 ? 'border-b border-[#F0F0EE]' : ''}`}
@@ -208,11 +210,10 @@ export default function WorkspaceDetailPage() {
                   </>
                 )}
               </div>
-            </div>
+            </div>)
           ))}
         </div>
       </div>
-
       <Modal isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} title="Invite a member">
         <form onSubmit={handleInvite} className="space-y-4" noValidate>
           <Input
@@ -241,7 +242,7 @@ export default function WorkspaceDetailPage() {
               >
                 Member
               </button>
-              
+
               {canInviteAsAdmin && (
                 <button
                   type="button"

@@ -1,4 +1,4 @@
-import { Body, Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { TwoFactorService } from './two-factor.service';
 import { UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwtAuth.guard';
@@ -15,7 +15,7 @@ export class TwoFactorController {
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('verify')
+    @Post('verify')
     async verify(@Req() req:{user: {userId: string}}, @Body() body: {code: string}) {
         const isValid = await this.twoFactorService.verifyAndEnable(req.user.userId, body.code);
         if(!isValid){
