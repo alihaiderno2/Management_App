@@ -35,3 +35,21 @@ export class ProjectManagerGuard implements CanActivate {
         return membership.role === 'MANAGER';
     }
 }
+
+@Injectable()
+export class ProjectContributorGuard implements CanActivate {
+    constructor(private readonly projectService: ProjectService) {}
+
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const req = context.switchToHttp().getRequest();
+        const userId = req.user.userId;
+        const projectId = req.params.projectId; 
+
+        if (!projectId) return false;
+
+        const membership = await this.projectService.getMembership(projectId, userId);
+        if (!membership) return false;
+
+        return membership.role === 'MANAGER' || membership.role === 'CONTRIBUTOR';
+    }
+}

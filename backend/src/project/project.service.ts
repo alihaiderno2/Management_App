@@ -7,6 +7,36 @@ export class ProjectService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, workspaceId: string, dto: CreateProjectDto) {
+    if(!await this.isOwner(workspaceId, userId)) {
+      const ownerId = await this.findOwner(workspaceId);
+      if(!ownerId) {
+        throw new NotFoundException('Workspace not found.');
+      }
+      
+      const Project = await this.prisma.project.create({
+        data: {
+          name: dto.name,
+          description: dto.description,
+          workspaceId: workspaceId,
+          createdById: userId,
+          projectMemberShips: {
+            create: [{
+              userId,
+              role: 'MANAGER',
+            },
+            {
+              userId: ownerId,
+              role: 'MANAGER',
+            }
+            ]
+            },
+        },
+        include: {
+          projectMemberShips: true,
+        },
+      });
+      return Project;
+    }
     const Project = await this.prisma.project.create({
       data: {
         name: dto.name,
@@ -28,6 +58,9 @@ export class ProjectService {
   }
 
   async findAllByWorkspace(workspaceId: string, userId: string) {
+    if(await this.isOwner(workspaceId, userId)) {
+      return await this.findAllForOwner(userId);
+    }
     return await this.prisma.project.findMany({
       where: {
         workspaceId,
@@ -133,7 +166,6 @@ export class ProjectService {
   }
 
   async removeMember(projectId: string, managerId: string, targetUserId: string) {
-    await this.verifyProjectManager(projectId, managerId);
 
     if (managerId === targetUserId) {
       throw new ForbiddenException('You cannot remove yourself from the project.');
@@ -177,5 +209,20 @@ export class ProjectService {
         projectId_userId: { projectId, userId },
       },
     });
+  }
+
+  async isOwner(workspaceId: string, userId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+    return workspace?.ownerId === userId;
+  }
+
+  async findOwner(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { ownerId: true },
+    });
+    return workspace?.ownerId;
   }
 }

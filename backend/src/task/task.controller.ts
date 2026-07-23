@@ -2,14 +2,14 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Re
 import { TaskService } from './task.service';
 import { CreateTaskDto, UpdateTaskDto, MoveTaskDto, TaskFilterDto } from './dto/task.dto';
 import { JwtAuthGuard } from '../auth/guards/jwtAuth.guard';
-import { ProjectManagerGuard, ProjectMemberGuard } from '../auth/guards/project.guard';
+import { ProjectManagerGuard, ProjectMemberGuard, ProjectContributorGuard} from '../auth/guards/project.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
-  @UseGuards(ProjectManagerGuard)
+  @UseGuards(ProjectContributorGuard)
   @Post('project/:projectId/task')
   async create(
     @Req() req: { user: { userId: string } },
@@ -28,12 +28,14 @@ export class TaskController {
     return await this.taskService.findAll(projectId, filters);
   }
 
-  @Get('task/:taskId')
+  @UseGuards(ProjectMemberGuard)
+  @Get('project/:projectId/task/:taskId') 
   async findOne(@Param('taskId') taskId: string) {
     return await this.taskService.findOne(taskId);
   }
 
-  @Patch('task/:taskId')
+  @UseGuards(ProjectContributorGuard)
+  @Patch('project/:projectId/task/:taskId')
   async update(
     @Param('taskId') taskId: string,
     @Body() dto: UpdateTaskDto,
@@ -41,7 +43,8 @@ export class TaskController {
     return await this.taskService.update(taskId, dto);
   }
 
-  @Patch('task/:taskId/move')
+  @UseGuards(ProjectContributorGuard)
+  @Patch('project/:projectId/task/:taskId/move')
   async move(
     @Param('taskId') taskId: string,
     @Body() dto: MoveTaskDto,
@@ -49,7 +52,8 @@ export class TaskController {
     return await this.taskService.move(taskId, dto);
   }
 
-  @Delete('task/:taskId')
+  @UseGuards(ProjectManagerGuard)
+  @Delete('project/:projectId/task/:taskId')
   async remove(@Param('taskId') taskId: string) {
     return await this.taskService.remove(taskId);
   }
