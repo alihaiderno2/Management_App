@@ -10,6 +10,7 @@ import { Avatar } from '../../../../../componenets/ui/Avatar';
 import { Badge } from '../../../../../componenets/ui/Badge';
 import {TaskDrawer} from '../../../../../componenets/board/TaskDrawer';
 import { TaskCard } from '@/app/componenets/board/TaskCard';
+import { KanbanBoard } from '@/app/componenets/board/KanbanBoard';
 
 interface Project {
   id: string;
@@ -36,7 +37,8 @@ interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BACKLOG';
+  order: number;
   assignee?: {
     id: string;
     name: string;
@@ -325,62 +327,15 @@ export default function ProjectPage() {
           </div>
         )}
 
-        {/* BOARD VIEW */}
         {activeTab === 'board' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-125">
-            
-            {/* TO DO COLUMN */}
-            <div className="bg-[#F5F5F4] rounded-2xl p-4 flex flex-col border border-[#E4E4E1]">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-[#1B1D1F] uppercase tracking-wide">To Do</h3>
-                <Badge variant="default">{tasks.filter(t => t.status === 'TODO').length}</Badge>
-              </div>
-              <div className="flex-1 overflow-y-auto pr-1">
-                {tasks.filter(t => t.status === 'TODO').map(task => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={{ id: task.id, title: task.title, status: task.status, assigneeName: task.assignee?.name }} 
-                    onClick={(id) => setSelectedTaskId(id)} 
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* IN PROGRESS COLUMN */}
-            <div className="bg-[#F5F5F4] rounded-2xl p-4 flex flex-col border border-[#E4E4E1]">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-[#1B1D1F] uppercase tracking-wide">In Progress</h3>
-                <Badge variant="default">{tasks.filter(t => t.status === 'IN_PROGRESS').length}</Badge>
-              </div>
-              <div className="flex-1 overflow-y-auto pr-1">
-                {tasks.filter(t => t.status === 'IN_PROGRESS').map(task => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={{ id: task.id, title: task.title, status: task.status, assigneeName: task.assignee?.name }} 
-                    onClick={(id) => setSelectedTaskId(id)} 
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* DONE COLUMN */}
-            <div className="bg-[#F5F5F4] rounded-2xl p-4 flex flex-col border border-[#E4E4E1]">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-[#1B1D1F] uppercase tracking-wide">Done</h3>
-                <Badge variant="default">{tasks.filter(t => t.status === 'DONE').length}</Badge>
-              </div>
-              <div className="flex-1 overflow-y-auto pr-1">
-                {tasks.filter(t => t.status === 'DONE').map(task => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={{ id: task.id, title: task.title, status: task.status, assigneeName: task.assignee?.name }} 
-                    onClick={(id) => setSelectedTaskId(id)} 
-                  />
-                ))}
-              </div>
-            </div>
-
-          </div>
+          <KanbanBoard 
+            projectId={projectId} 
+            tasks={tasks} 
+            userRole={myProjectMembership?.role || 'VIEWER'}
+            currentUserId={user?.id || ''}
+            onTaskUpdated={handleTaskUpdated}
+            onTaskClick={setSelectedTaskId}
+          />
         )}
 
         {activeTab === 'settings' && (

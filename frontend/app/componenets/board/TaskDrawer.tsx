@@ -125,6 +125,7 @@ export function TaskDrawer({ isOpen, taskId, projectId, onClose, onTaskUpdated }
               <MenuItem value="TODO">To Do</MenuItem>
               <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
               <MenuItem value="DONE">Done</MenuItem>
+              <MenuItem value="BACKLOG">Backlog</MenuItem>
             </Select>
           </Box>
 

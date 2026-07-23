@@ -43,7 +43,7 @@ export class TaskController {
     return await this.taskService.update(taskId, dto);
   }
 
-  @UseGuards(ProjectContributorGuard)
+  @UseGuards(ProjectMemberGuard)
   @Patch('project/:projectId/task/:taskId/move')
   async move(
     @Param('taskId') taskId: string,
