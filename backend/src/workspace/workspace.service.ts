@@ -251,7 +251,7 @@ export class WorkspaceService {
             throw new UnprocessableEntityException('Invite to this user has already been sent.');
         }
  
-        const token = await this.jwtService.signAsync({ userId, type: 'workspace_invite' });
+        const token = await this.jwtService.signAsync({ userId, type: 'workspace_invite'}, { expiresIn: '7d' });
  
         const result = await this.emailService.sendEmail({
             recipients: [email],
@@ -260,7 +260,7 @@ export class WorkspaceService {
             html: `<p>You have been invited to join a workspace as a ${role}.</p><a href="http://localhost:3000/invite-accept?workspaceId=${workspaceId}&token=${token}">Accept Invitation</a>`,
         });
         if (!result.success) {
-            throw new UnprocessableEntityException('Failed to send email');        
+            throw new UnprocessableEntityException('Failed to send email');
         }
  
         const workspace = await this.prisma.workspace.update({
@@ -319,14 +319,19 @@ export class WorkspaceService {
             where: { token, acceptedAt: null },
         });
         
-        if (!invite) throw new NotFoundException('Invite not found or already accepted');
+        if (!invite) {
+            console.log('Invite not found or already accepted');
+            throw new NotFoundException('Invite not found or already accepted');
+        }
 
         if (invite.email !== email) {
+            console.log('Email mismatch: invite email is', invite.email, 'but user email is', email);
             throw new UnauthorizedException('You must accept this invite using the email address it was sent to.');
         }
 
         const decodedToken = await this.jwtService.verifyAsync(token);
         if (decodedToken.type !== 'workspace_invite') {
+            console.log('Invalid token type:', decodedToken.type);
             throw new UnauthorizedException('Invalid token type');
         }
         
@@ -347,6 +352,7 @@ export class WorkspaceService {
             data: { acceptedAt: new Date() },
         });
 
+        console.log('Invite accepted successfully for userId:', invitedUserId, 'workspaceId:', workspaceId);
         return { message: 'Invite accepted successfully', workspaceMembership };
     }
 

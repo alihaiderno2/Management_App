@@ -72,6 +72,13 @@ export class TaskService {
   }
 
   async update(taskId: string, dto: UpdateTaskDto) {
+    if(dto.sprintId) {
+      const task = await this.prisma.task.update({
+        where: { id: taskId },
+        data: { sprintId: dto.sprintId },
+      });
+      return task;
+    }
     return await this.prisma.task.update({
       where: { id: taskId },
       data: dto,

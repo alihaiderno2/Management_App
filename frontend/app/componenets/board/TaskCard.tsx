@@ -4,7 +4,7 @@ import { Avatar } from '../ui/Avatar';
 export interface Task {
   id: string;
   title: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BACKLOG';
   assigneeName?: string;
   assigneeId?: string;
 }

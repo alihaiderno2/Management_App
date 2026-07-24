@@ -39,6 +39,10 @@ export class UpdateTaskDto {
   @IsDateString()
   @IsOptional()
   dueDate?: string;
+
+  @IsString()
+  @IsOptional()
+  sprintId?: string | null;
 }
 
 export class MoveTaskDto {

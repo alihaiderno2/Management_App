@@ -10,6 +10,7 @@ import { Avatar } from '../../../../../componenets/ui/Avatar';
 import { Badge } from '../../../../../componenets/ui/Badge';
 import {TaskDrawer} from '../../../../../componenets/board/TaskDrawer';
 import { KanbanBoard } from '@/app/componenets/board/KanbanBoard';
+import { BacklogBoard } from '@/app/componenets/board/BacklogBoard';
 
 interface Project {
   id: string;
@@ -42,6 +43,7 @@ interface Task {
     id: string;
     name: string;
   };
+  sprintId?: string;
 }
 
 export default function ProjectPage() {
@@ -82,11 +84,14 @@ export default function ProjectPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
+  const [sprints, setSprints] = useState<any[]>([]);
+
   const fetchProjectData = async () => {
     try {
       const headers = { Authorization: `Bearer ${accessToken}` };
       const response = await apiClient.get(`/workspace/${workspaceId}/project/${projectId}`, { headers });
       setProject(response.data);
+
     } catch (err) {
       console.error('Could not load project details', err);
     } finally {
@@ -118,10 +123,21 @@ export default function ProjectPage() {
     }
   };
 
+  const fetchSprintsData = async () => {
+    try {
+      const headers = { Authorization: `Bearer ${accessToken}` };
+      const response = await apiClient.get(`/project/${projectId}/sprint`, { headers });
+      setSprints(response.data);
+    }catch (err) {
+      console.error('Could not load sprints', err);
+    }
+  }
+
   useEffect(() => {
     if (accessToken && workspaceId && projectId) {
       fetchProjectData();
       fetchMembersData();
+      fetchSprintsData();
       fetchTasksData();
     }
   }, [accessToken, workspaceId, projectId]);
@@ -241,6 +257,8 @@ export default function ProjectPage() {
     );
   };
 
+  const activeSprintTasks = tasks.filter((task) => sprints.some((sprint) => sprint.status === 'ACTIVE' && sprint.id === task.sprintId));
+
   const availableWorkspaceMembers = workspaceMembers.filter(
     (wm) => !projectMembers.some((pm) => pm.user.id === wm.id)
   );
@@ -299,37 +317,20 @@ export default function ProjectPage() {
 
         {/* BACKLOG VIEW */}
         {activeTab === 'backlog' && (
-          <div className="bg-[#FFFFFF] rounded-2xl border border-[#E4E4E1] p-6">
-            <h2 className="text-lg font-semibold text-[#1B1D1F] mb-4">Project Backlog</h2>
-            <div className="flex flex-col gap-2">
-
-              {tasks.length === 0 ? (
-                <p className="text-sm text-[#6B6F76]">No tasks created yet.</p>
-              ) : (
-                tasks.map(task => (
-                  <div 
-                    key={task.id} 
-                    onClick={() => setSelectedTaskId(task.id)}
-                    className="flex justify-between items-center p-4 border border-[#E4E4E1] rounded-xl hover:border-[#0F7B6C] cursor-pointer transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-[#1B1D1F]">{task.title}</p>
-                      <p className="text-xs text-[#6B6F76] mt-1">Assignee: {task.assignee?.name || 'Unassigned'}</p>
-                    </div>
-                    <Badge variant={task.status === 'DONE' ? 'accent' : 'default'}>
-                      {task.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <BacklogBoard
+            projectId={projectId as string}
+            tasks={tasks}
+            sprints={sprints}
+            userRole={myProjectMembership?.role || 'VIEWER'}
+            onDataChanged={fetchSprintsData}
+            onTaskClick={setSelectedTaskId}
+          />
         )}
 
         {activeTab === 'board' && (
-          <KanbanBoard 
-            projectId={projectId} 
-            tasks={tasks} 
+          <KanbanBoard
+            projectId={projectId}
+            tasks={activeSprintTasks}
             userRole={myProjectMembership?.role || 'VIEWER'}
             currentUserId={user?.id || ''}
             onTaskUpdated={handleTaskUpdated}
@@ -339,7 +340,7 @@ export default function ProjectPage() {
 
         {activeTab === 'settings' && (
           <div className="flex gap-8">
-            <div className="w-48 flex-shrink-0 flex flex-col space-y-1">
+            <div className="w-48 shrink-0 flex flex-col space-y-1">
               <button
                 onClick={() => setSettingsView('general')}
                 className={`text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
@@ -380,7 +381,7 @@ export default function ProjectPage() {
                       variant="primary" 
                       onClick={handleDeleteProject} 
                       disabled={isDeleting}
-                      className="!bg-[#C1443A] hover:!bg-[#A33931] !border-none w-auto px-4"
+                      className="bg-[#C1443A]! hover:bg-[#A33931]! border-none! w-auto px-4"
                     >
                       {isDeleting ? 'Deleting...' : 'Delete Project'}
                     </Button>

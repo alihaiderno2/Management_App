@@ -39,7 +39,7 @@ export function Avatar({ name, size = 'md', userId }: AvatarProps) {
       onPointerDown={(e) => {
         if (userId) e.stopPropagation();
       }}
-      className={`rounded-full bg-[#0F7B6C] text-white flex items-center justify-center font-medium flex-shrink-0 ${sizeClasses} ${interactiveClasses}`}
+      className={`rounded-full bg-[#0F7B6C] text-white flex items-center justify-center font-medium shrink-0 ${sizeClasses} ${interactiveClasses}`}
       title={name}
     >
       {getInitials(name)}

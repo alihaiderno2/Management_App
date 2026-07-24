@@ -157,7 +157,7 @@ model Project {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   createdById        String
-  workspace          Workspace      @relation(fields: [workspaceId], references: [id])
+  workspace          Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   projectMemberShips ProjectMember[]
   sprints            Sprint[]
   tasks              Task[]
@@ -172,7 +172,7 @@ model ProjectMember {
   role      ProjectRole     @default(VIEWER)
   joinedAt  DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
 
   @@unique([projectId, userId])
@@ -188,7 +188,7 @@ model Sprint {
   createdAt DateTime @default(now())
   status   SprintStatus @default(PENDING)
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks   Task[]
 }
 
@@ -209,8 +209,8 @@ model Task {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  sprint       Sprint?       @relation(fields: [sprintId], references: [id])
-  project      Project       @relation(fields: [projectId], references: [id])
+  sprint       Sprint?       @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdBy    User          @relation("TaskCreatedBy", fields: [createdByID], references: [id])
   assignee     User?         @relation("TaskAssignee", fields: [assigneeId], references: [id])
   taskComments TaskComment[]
@@ -248,7 +248,7 @@ model ChatRoom {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  project   Project?   @relation(fields: [projectId], references: [id])
+  project   Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   workspace Workspace? @relation(fields: [workspaceId], references: [id])
   participants ChatRoomParticipant[]
   messages  Message[]
