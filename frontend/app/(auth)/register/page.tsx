@@ -1,17 +1,21 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, FormEvent, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { Button } from '@/app/componenets/ui/Button';
 import { validateEmail, validatePassword, validateName } from '@/lib/validators';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const queryEmail = searchParams.get('email') || '';
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(queryEmail);
   const [password, setPassword] = useState('');
 
   const [nameError, setNameError] = useState('');
@@ -20,6 +24,10 @@ export default function RegisterPage() {
   const [serverError, setServerError] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (queryEmail) setEmail(queryEmail);
+  }, [queryEmail]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -38,8 +46,18 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     try {
       const body = { name, email, password };
+      
+      if (redirectUrl && redirectUrl !== '/dashboard') {
+        localStorage.setItem('post_verify_redirect', redirectUrl);
+      }
+
       await apiClient.post('/auth/register', body);
-      router.push('/verify-email');
+      
+      if (redirectUrl && redirectUrl !== '/dashboard') {
+        router.push(`/verify-email?redirect=${encodeURIComponent(redirectUrl)}`);
+      } else {
+        router.push('/verify-email');
+      }
     } catch (err: any) {
       const message = err?.response?.data?.message;
       setServerError(message ?? 'Something went wrong. Try again.');
@@ -49,7 +67,6 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="max-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundColor: '#14161A' }}>
       <div className="w-full max-w-sm">
 
         <div className="rounded-2xl p-6 sm:p-8 shadow-xl shadow-black/40" style={{ backgroundColor: '#FFFFFF' }}>
@@ -124,14 +141,15 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          {/* Slightly reduced margin-top here from mt-6 to mt-5 */}
           <div className="mt-5 pt-5 border-t border-[#E4E4E1] flex flex-col gap-2">
             <Button variant="secondary" onClick={() => {
+              sessionStorage.setItem('oauth_redirect', redirectUrl);
               window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
             }}>
               Continue with Google
             </Button>
             <Button variant="secondary" onClick={() => {
+              sessionStorage.setItem('oauth_redirect', redirectUrl);
               window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
             }}>
               Continue with GitHub
@@ -146,6 +164,15 @@ export default function RegisterPage() {
           </Link>
         </p>
       </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <main className="min-h-screen flex items-center justify-center px-4 py-12" style={{ backgroundColor: '#14161A' }}>
+      <Suspense fallback={<div className="w-full max-w-sm rounded-2xl p-6 sm:p-8 shadow-xl bg-white min-h-[500px] animate-pulse" />}>
+        <RegisterContent />
+      </Suspense>
     </main>
   );
 }

@@ -13,6 +13,9 @@ import { EmailModule } from '../email/email.module';
 import { RedisModule } from '../redis/redis.module';
 import { BullModule } from '@nestjs/bullmq';
 import { TasksModule } from '../tasks/tasks.module';
+import {WorkspaceMemberGuard} from "./guards/workspace.guard";
+import {WorkspaceOwnerGuard} from "./guards/workspaceOwner.guard";
+import {WorkspaceModule} from "../workspace/workspace.module";
 
 @Module({
   imports: [TasksModule,
@@ -26,10 +29,10 @@ import { TasksModule } from '../tasks/tasks.module';
       secret: configService.get<string>('JWT_SECRET'),
       signOptions: { expiresIn: '15m' },
     }),
-  }),TwoFactorModule
+  }),TwoFactorModule,WorkspaceModule,
 ],
   controllers: [AuthController],
-  providers: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy],
-  exports: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy],
+  providers: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy,WorkspaceMemberGuard, WorkspaceOwnerGuard],
+  exports: [AuthService,JwtStrategy,GoogleStrategy,GithubStrategy,JwtModule],
 })
 export class AuthModule {}

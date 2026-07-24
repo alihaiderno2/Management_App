@@ -9,6 +9,7 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
+  const redirectUrl = searchParams.get('redirect') || '';
 
   const [status, setStatus] = useState<'pending' | 'verifying' | 'success' | 'error'>('pending');
   const [errorMessage, setErrorMessage] = useState('');
@@ -25,8 +26,16 @@ function VerifyEmailContent() {
         await apiClient.get(`/auth/verify-email?token=${token}`);
         setStatus('success');
 
+        const finalRedirect = redirectUrl || localStorage.getItem('post_verify_redirect') || '';
+        
+        localStorage.removeItem('post_verify_redirect');
+
         setTimeout(() => {
-          router.push('/login');
+          if (finalRedirect) {
+            router.push(`/login?redirect=${encodeURIComponent(finalRedirect)}`);
+          } else {
+            router.push('/login');
+          }
         }, 3000);
       } catch (err: any) {
         setStatus('error');

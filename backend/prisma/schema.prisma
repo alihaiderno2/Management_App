@@ -25,6 +25,12 @@ enum Role {
   ADMIN
 }
 
+enum SprintStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
 enum ProjectRole {
   MANAGER
   CONTRIBUTOR
@@ -72,6 +78,8 @@ model User {
   projectMemberShips ProjectMember[]
   workspaceMemberships WorkspaceMember[]
   chatRooms ChatRoomParticipant[]
+  sentInvites WorkspaceInvite[]
+  disabledWorkspaceMemberships WorkspaceMember[] @relation("DisabledByUser")
 }
 model RefreshToken{
   id         String   @id @default(uuid())
@@ -102,6 +110,7 @@ model Workspace {
   projects  Project[]
   members   WorkspaceMember[]
   chatRooms ChatRoom[]
+  invites   WorkspaceInvite[]
   disabled Boolean  @default(false)
 }
 // to define the workspace scope of the user
@@ -110,12 +119,33 @@ model WorkspaceMember {
   workspaceId String
   userId      String
   role        Role     @default(USER)
+  disabled    Boolean  @default(false)
   joinedAt    DateTime @default(now())
+  diabledBy String?
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id])
+  disabledByUser User? @relation("DisabledByUser", fields: [diabledBy], references: [id])
 
   @@unique([workspaceId, userId])
+}
+
+model WorkspaceInvite {
+  id           String        @id @default(uuid())
+  workspaceId  String
+  email        String
+  role         Role @default(USER)
+  token        String        @unique
+  invitedById  String
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdAt    DateTime      @default(now())
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy    User          @relation(fields: [invitedById], references: [id])
+
+  @@unique([workspaceId, email])
+  @@index([email])
 }
 
 // Project Details
@@ -123,11 +153,11 @@ model Project {
   id                 String          @id @default(uuid())
   name               String
   description        String?
-  workspaceId        String?
+  workspaceId        String
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
-  createdById        Int
-  workspace          Workspace?      @relation(fields: [workspaceId], references: [id])
+  createdById        String
+  workspace          Workspace      @relation(fields: [workspaceId], references: [id])
   projectMemberShips ProjectMember[]
   sprints            Sprint[]
   tasks              Task[]
@@ -139,7 +169,7 @@ model ProjectMember {
   id        String   @id @default(uuid())
   projectId String
   userId    String
-  role      Role     @default(USER)
+  role      ProjectRole     @default(VIEWER)
   joinedAt  DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id])
@@ -156,6 +186,7 @@ model Sprint {
   startDate DateTime
   endDate   DateTime
   createdAt DateTime @default(now())
+  status   SprintStatus @default(PENDING)
 
   project Project @relation(fields: [projectId], references: [id])
   tasks   Task[]
@@ -169,6 +200,7 @@ model Task {
   title       String
   description String?
   dueDate     DateTime?
+  order       Float          @default(0)
 
   createdByID String
   assigneeId  String?

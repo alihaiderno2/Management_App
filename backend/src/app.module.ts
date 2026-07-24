@@ -26,6 +26,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { TasksModule } from './tasks/tasks.module';
 import { RedisModule } from './redis/redis.module';
 import {BullModule} from '@nestjs/bullmq';
+import { WorkspaceModule } from './workspace/workspace.module';
 
 @Module({
   imports: [BullModule.forRoot({
@@ -36,7 +37,7 @@ import {BullModule} from '@nestjs/bullmq';
   }),
     RedisModule,ThrottlerModule.forRoot([{
       ttl: 60000, 
-      limit: 10,  
+      limit: 100,  
     }]),
     PrismaModule, UserModule, AuthModule, TwoFactorModule,
     MailerModule.forRoot({
@@ -53,10 +54,11 @@ import {BullModule} from '@nestjs/bullmq';
       isGlobal: true,
     }),
     TasksModule,
-    RedisModule
+    RedisModule,
+    WorkspaceModule
   ],
   controllers: [AppController, UserController, TwoFactorController, WorkspaceController, ProjectController, TaskController, SprintController],
-  providers: [AppService, PrismaService, TwoFactorService, WorkspaceService, ProjectService, TaskService, SprintService, EmailService,{
+  providers: [AppService, PrismaService, TwoFactorService, ProjectService, TaskService, SprintService, EmailService,{
       provide: APP_GUARD,
       useClass: ThrottlerGuard, 
     }],

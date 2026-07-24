@@ -1,101 +1,79 @@
 "use client";
 
-import {useEffect, useState} from 'react';
-import {useRouter} from 'next/navigation';
-import {apiClient} from '@/lib/api-client';
-import {useAuthStore} from '@/store/auth-store';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Box, IconButton, Typography } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
+import { Sidebar } from '@/app/componenets/layout/Sidebar';
+import { useUiStore } from '@/store/ui-store';
+import { UserProfileDrawer } from '@/app/componenets/profile/UserProfileDrawer';
 
-export default function DashboardLayout({children} : {children: React.ReactNode}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
-    const {user,accessToken,isAuthenticated, setSession, clearSession} = useAuthStore();
+    const { accessToken, isAuthenticated, setSession, clearSession } = useAuthStore();
     const [isChecking, setIsChecking] = useState(true);
-    
-    useEffect(() =>{
-        if(isAuthenticated && accessToken){
+
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen);
+    };
+
+    useEffect(() => {
+        if (isAuthenticated && accessToken) {
             setIsChecking(false);
             return;
         }
 
         const tryRestoreSession = async () => {
-            try{
+            try {
                 const refreshResponse = await apiClient.post('/auth/refresh');
-                const {accessToken: newAccessToken} = refreshResponse.data;
-
+                const { accessToken: newAccessToken } = refreshResponse.data;
                 const meResponse = await apiClient.get('/user/me', {
-                    headers: {Authorization: `Bearer ${newAccessToken}`},
+                    headers: { Authorization: `Bearer ${newAccessToken}` },
                 });
-                // meResponse.data is now the plain user object directly — no .safeUser,
-                // and newAccessToken is already the string we need, no .data.accessToken.
                 setSession(meResponse.data, newAccessToken);
-                console.log('Session restored:', meResponse.data, newAccessToken);
-                console.log(accessToken,user,isAuthenticated);
-            }catch(err){
+            } catch {
                 clearSession();
                 router.push('/login');
-            }finally{
+            } finally {
                 setIsChecking(false);
             }
-        }
+        };
 
         tryRestoreSession();
-    },[isAuthenticated, accessToken, setSession, router]);
+    }, [isAuthenticated, accessToken, setSession, clearSession, router]);
 
-    if(isChecking){
+    if (isChecking) {
         return (
-            <main className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#14161A'}}>
-                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-white"></div>
-            </main>
-        )
+            <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#14161A' }}>
+                <Box sx={{ width: 32, height: 32, border: '2px solid white', borderBottomColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', '@keyframes spin': { to: { transform: 'rotate(360deg)' } } }} />
+            </Box>
+        );
     }
 
-    const handleLogout = async () => {
-        try{
-            await apiClient.post('/auth/logout', {}, {
-                headers: {Authorization: `Bearer ${accessToken}`},
-            });
-            clearSession();
-            router.push('/login');
-        }catch(err){
-            console.error('Logout failed:', err);
-        }
-        finally{
-            clearSession();
-        }
-    }
-    return(
-        <div className = "min-h-screen flex flex-col md:flex-row">
-            <aside className = "w-full md:w-1/5 bg-[#14161A] flex flex-col justify-between p-4 border-b md:border-b-0 md:border-r border-white/5">
-                <div className="flex flex-row md:flex-col md:gap-8 items-center md:items-stretch">
-                    <span className="font-mono text-xs tracking-[0.2em] text-[#F5F4F0] uppercase">
-                        Team Collaboration
-                    </span>
+    return (
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+            <Sidebar mobileOpen={mobileOpen} onClose={handleDrawerToggle} />
 
-                    <nav className=" md:flex md:flex-col md:gap-1 md:mt-2">
-                        <a href="/dashboard" className="rounded-lg px-3 py-2 text-sm text-[#F5F4F0] hover:bg-white/5 transition-colors">
-                        Dashboard
-                        </a>
-                        <a href="/workspace" className="rounded-lg px-3 py-2 text-sm text-[#9A9CA3] hover:bg-white/5 hover:text-[#F5F4F0] transition-colors">
-                        Workspaces
-                        </a>
-                        <a href="/settings" className="rounded-lg px-3 py-2 text-sm text-[#9A9CA3] hover:bg-white/5 hover:text-[#F5F4F0] transition-colors">
-                        Settings
-                        </a>
-                    </nav>
-                </div>
+            <Box component="main" sx={{ flex: 1, bgcolor: '#F5F5F4', display: 'flex', flexDirection: 'column', width: { md: `calc(100% - 240px)` } }}>
 
-                <div className="hidden md:flex items-center gap-3 md:pt-4 md:mt-4 md:border-t md:border-white/10">
-                    <div>
-                        <p className="text-sm text-[#F5F4F0]">{user?.name}</p>
-                        <p className="text-xs text-[#9A9CA3]">{user?.email}</p>
-                    </div>
-                    <button onClick={handleLogout} className="text-xs text-[#9A9CA3] hover:text-[#F5F4F0] transition-colors">
-                        Log out
-                    </button>
-                </div>
-            </aside>
-            <main className = "flex-1 p-4 bg-[#F5F4F0]">
-                {children}
-            </main>
-        </div>
-    )
+                <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', p: 2, bgcolor: '#14161A', color: '#F5F4F0' }}>
+                    <IconButton color="inherit" edge="start" onClick={handleDrawerToggle}>
+                        <MenuIcon />
+                    </IconButton>
+                    <Typography sx={{ ml: 2, fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                        Menu
+                    </Typography>
+                </Box>
+
+                <Box sx={{ flex: 1, p: { xs: 2, md: 5 } }}>
+                    {children}
+                </Box>
+            </Box>
+            <UserProfileDrawer />
+        </Box>
+    );
 }

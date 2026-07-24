@@ -137,6 +137,7 @@ async googleAuthentication(profile: { id: string; emails: { value: string }[]; d
     if(!user){
         throw new UnauthorizedException('Google authentication failed');
     }
+    await this.sendVerificationEmail(user.id,user.email);
     return this.issueTokens(user.id,user.email);
 }
 
@@ -187,6 +188,7 @@ async githubAuthentication(profile:any){
     if(!user ){
         throw new UnauthorizedException('Github authentication failed');
     }
+    await this.sendVerificationEmail(user.id,user.email);
     return this.issueTokens(user.id,user.email);
 }
 
@@ -281,5 +283,10 @@ async generateRefreshToken(userId : string,email : string, expiresIn: number){
         expiresAt: new Date(Date.now() + expiresIn * 1000),
     }});
     return token;
+}
+
+async checkEmailExists(email: string) {
+    const user = await this.userService.findByEmail(email);
+    return { exists: !!user };
 }
 }
