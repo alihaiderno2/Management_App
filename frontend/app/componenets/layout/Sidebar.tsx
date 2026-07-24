@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import {
   Drawer, Box, Typography, List, ListItemButton, ListItemText, ListItemIcon,
-  Divider, Avatar, IconButton, Menu, MenuItem,
+  Divider, IconButton, Menu, MenuItem,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/DashboardOutlined';
 import WorkspacesIcon from '@mui/icons-material/BusinessOutlined';
@@ -14,6 +14,7 @@ import FolderIcon from '@mui/icons-material/FolderOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVertOutlined';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
+import { Avatar } from '@/app/componenets/ui/Avatar';
 
 const DRAWER_WIDTH = 240;
 
@@ -121,9 +122,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: '#0F7B6C' }}>
-          {(user?.name ?? '?').slice(0, 2).toUpperCase()}
-        </Avatar>
+        <Avatar name={user?.name || 'unknown'} size="sm" userId={user?.id} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontSize: 13, color: '#F5F4F0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user?.name}

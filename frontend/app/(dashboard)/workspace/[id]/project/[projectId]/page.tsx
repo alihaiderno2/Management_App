@@ -9,7 +9,6 @@ import { Modal } from '../../../../../componenets/ui/Modal';
 import { Avatar } from '../../../../../componenets/ui/Avatar';
 import { Badge } from '../../../../../componenets/ui/Badge';
 import {TaskDrawer} from '../../../../../componenets/board/TaskDrawer';
-import { TaskCard } from '@/app/componenets/board/TaskCard';
 import { KanbanBoard } from '@/app/componenets/board/KanbanBoard';
 
 interface Project {
@@ -414,7 +413,7 @@ export default function ProjectPage() {
                         className={`flex items-center justify-between px-4 py-3 ${i !== projectMembers.length - 1 ? 'border-b border-[#F0F0EE]' : ''}`}
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar name={member.user.name} size="sm" />
+                          <Avatar name={member.user.name} size="sm" userId={member.user.id} />
                           <div>
                             <p className="text-sm text-[#1B1D1F]">
                               {member.user.name}

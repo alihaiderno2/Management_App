@@ -1,10 +1,12 @@
-import { Card, CardActionArea, CardContent, Typography, Avatar, Box, Chip } from '@mui/material';
+import { Card, CardActionArea, CardContent, Typography, Box, Chip } from '@mui/material';
+import { Avatar } from '../ui/Avatar';
 
 export interface Task {
   id: string;
   title: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
   assigneeName?: string;
+  assigneeId?: string;
 }
 
 interface TaskCardProps {
@@ -40,11 +42,7 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
             }} 
           />
           {task.assigneeName && (
-            <Avatar 
-              sx={{ width: 24, height: 24, fontSize: '11px', bgcolor: '#0F7B6C' }}
-            >
-              {task.assigneeName.charAt(0).toUpperCase()}
-            </Avatar>
+            <Avatar name={task.assigneeName} size="sm" userId={task.assigneeId} />
           )}
         </Box>
       </CardActionArea>

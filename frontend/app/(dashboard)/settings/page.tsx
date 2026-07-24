@@ -13,10 +13,10 @@ export default function SettingsPage() {
 
       <div className="rounded-2xl p-6 mb-4" style={{ backgroundColor: '#FFFFFF' }}>
         <div className="flex items-center gap-4">
-          <Avatar name={user?.name ?? ''} />
+          <Avatar name={user?.name ?? '' } size = 'lg' userId={user?.id}  />
           <div>
-            <p className="text-sm font-medium text-[#1B1D1F]">{user?.name}</p>
-            <p className="text-xs text-[#9A9CA3]">{user?.email}</p>
+            <p className="text-lg font-bold text-[#1B1D1F]">{user?.name}</p>
+            <p className="text-sm text-[#9A9CA3]">{user?.email}</p>
           </div>
         </div>
       </div>

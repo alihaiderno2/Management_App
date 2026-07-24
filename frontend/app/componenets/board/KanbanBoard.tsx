@@ -73,6 +73,7 @@ function SortableTask({ task, onClick, canDrag }: { task: Task; onClick: (id: st
             title: task.title,
             status: task.status as any,
             assigneeName: task.assignee?.name,
+            assigneeId : task.assignee?.id,
           }}
           onClick={() => onClick(task.id)}
         />
@@ -259,6 +260,7 @@ export function KanbanBoard({ projectId, tasks,userRole, currentUserId, onTaskUp
                 title: activeDragTask.title,
                 status: activeDragTask.status as any,
                 assigneeName: activeDragTask.assignee?.name,
+                assigneeId : activeDragTask.assignee?.id,
               }}
               onClick={() => {}}
             />

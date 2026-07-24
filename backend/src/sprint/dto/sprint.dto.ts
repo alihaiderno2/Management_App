@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsDateString, IsOptional } from 'class-validator';
+import { SprintStatus } from '@prisma/client';
 
 export class CreateSprintDto {
   @IsString()
@@ -26,4 +27,7 @@ export class UpdateSprintDto {
   @IsDateString()
   @IsOptional()
   endDate?: string;
+
+  @IsOptional()
+  status?: SprintStatus;
 }

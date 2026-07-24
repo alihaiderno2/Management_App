@@ -2,44 +2,44 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { SprintService } from './sprint.service';
 import { CreateSprintDto, UpdateSprintDto } from './dto/sprint.dto';
 import { JwtAuthGuard } from '../auth/guards/jwtAuth.guard';
-import { ProjectMemberGuard, ProjectManagerGuard} from '../auth/guards/project.guard'; 
+import { ProjectMemberGuard, ProjectManagerGuard} from '../auth/guards/project.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller()
+@Controller('project/:projectId/sprint')
 export class SprintController {
   constructor(private readonly sprintService: SprintService) {}
 
   @UseGuards(ProjectManagerGuard)
-  @Post('project/:projectId/sprint')
-  async create(
-    @Param('projectId') projectId: string,
-    @Body() dto: CreateSprintDto,
-  ) {
+  @Post()
+  async create(@Param('projectId') projectId: string, @Body() dto: CreateSprintDto) {
     return await this.sprintService.create(projectId, dto);
   }
 
   @UseGuards(ProjectMemberGuard)
-  @Get('project/:projectId/sprint')
+  @Get()
   async findAll(@Param('projectId') projectId: string) {
     return await this.sprintService.findAllByProject(projectId);
   }
 
-
-  @Get('sprint/:sprintId')
-  async findOne(@Param('sprintId') sprintId: string) {
-    return await this.sprintService.findOne(sprintId);
+  @UseGuards(ProjectMemberGuard)
+  @Get(':sprintId')
+  async findOne(@Param('projectId') projectId: string, @Param('sprintId') sprintId: string) {
+    return await this.sprintService.findOne(projectId, sprintId); 
   }
 
-  @Patch('sprint/:sprintId')
+  @UseGuards(ProjectManagerGuard)
+  @Patch(':sprintId')
   async update(
+    @Param('projectId') projectId: string,
     @Param('sprintId') sprintId: string,
     @Body() dto: UpdateSprintDto,
   ) {
-    return await this.sprintService.update(sprintId, dto);
+    return await this.sprintService.update(projectId, sprintId, dto); 
   }
 
-  @Delete('sprint/:sprintId')
-  async remove(@Param('sprintId') sprintId: string) {
-    return await this.sprintService.remove(sprintId);
+  @UseGuards(ProjectManagerGuard)
+  @Delete(':sprintId')
+  async remove(@Param('projectId') projectId: string, @Param('sprintId') sprintId: string) {
+    return await this.sprintService.remove(projectId, sprintId); 
   }
 }

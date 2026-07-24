@@ -266,7 +266,7 @@ export default function WorkspaceOverviewPage() {
                       className={`flex items-center justify-between px-6 py-3 ${i !== members.length - 1 ? 'border-b border-[#F0F0EE]' : ''}`}
                     >
                       <div className="flex items-center gap-3">
-                        <Avatar name={member.name} size="sm" />
+                        <Avatar name={member.name} size="sm" userId={member.id} />
                         <div>
                           <p className="text-sm text-[#1B1D1F]">
                             {member.name}

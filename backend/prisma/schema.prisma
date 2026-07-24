@@ -25,6 +25,12 @@ enum Role {
   ADMIN
 }
 
+enum SprintStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
 enum ProjectRole {
   MANAGER
   CONTRIBUTOR
@@ -180,6 +186,7 @@ model Sprint {
   startDate DateTime
   endDate   DateTime
   createdAt DateTime @default(now())
+  status   SprintStatus @default(PENDING)
 
   project Project @relation(fields: [projectId], references: [id])
   tasks   Task[]
