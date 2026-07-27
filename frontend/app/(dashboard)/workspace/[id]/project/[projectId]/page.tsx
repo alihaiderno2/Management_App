@@ -11,6 +11,7 @@ import { Badge } from '../../../../../componenets/ui/Badge';
 import {TaskDrawer} from '../../../../../componenets/board/TaskDrawer';
 import { KanbanBoard } from '@/app/componenets/board/KanbanBoard';
 import { BacklogBoard } from '@/app/componenets/board/BacklogBoard';
+import  {ChatTester}  from '@/app/componenets/chat/chatTester';
 
 interface Project {
   id: string;
@@ -39,11 +40,11 @@ interface Task {
   description?: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BACKLOG';
   order: number;
+  sprintId?: string | null;
   assignee?: {
     id: string;
     name: string;
   };
-  sprintId?: string;
 }
 
 export default function ProjectPage() {
@@ -258,6 +259,7 @@ export default function ProjectPage() {
   };
 
   const activeSprintTasks = tasks.filter((task) => sprints.some((sprint) => sprint.status === 'ACTIVE' && sprint.id === task.sprintId));
+  const activeSprint = sprints.find(s => s.status === 'ACTIVE');
 
   const availableWorkspaceMembers = workspaceMembers.filter(
     (wm) => !projectMembers.some((pm) => pm.user.id === wm.id)
@@ -324,6 +326,7 @@ export default function ProjectPage() {
             userRole={myProjectMembership?.role || 'VIEWER'}
             onDataChanged={fetchSprintsData}
             onTaskClick={setSelectedTaskId}
+            onTaskUpdated={handleTaskUpdated}
           />
         )}
 
@@ -331,6 +334,7 @@ export default function ProjectPage() {
           <KanbanBoard
             projectId={projectId}
             tasks={activeSprintTasks}
+            activeSprintId={activeSprint?.id || null}
             userRole={myProjectMembership?.role || 'VIEWER'}
             currentUserId={user?.id || ''}
             onTaskUpdated={handleTaskUpdated}
@@ -619,6 +623,7 @@ export default function ProjectPage() {
           onClose={() => setSelectedTaskId(null)}
           onTaskUpdated={handleTaskUpdated}
         />
+      <ChatTester />
     </div>
   );
 }

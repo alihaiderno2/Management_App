@@ -9,10 +9,12 @@ import { useAuthStore } from '@/store/auth-store';
 import { Sidebar } from '@/app/componenets/layout/Sidebar';
 import { useUiStore } from '@/store/ui-store';
 import { UserProfileDrawer } from '@/app/componenets/profile/UserProfileDrawer';
+import { useChatStore } from '@/store/chat-store';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { accessToken, isAuthenticated, setSession, clearSession } = useAuthStore();
+    const {connectSocket, disconnectSocket} = useChatStore();
     const [isChecking, setIsChecking] = useState(true);
 
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -46,6 +48,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         tryRestoreSession();
     }, [isAuthenticated, accessToken, setSession, clearSession, router]);
 
+    useEffect(() => {
+        if (isAuthenticated && accessToken) {
+            connectSocket();
+        }
+
+        return () => {
+            disconnectSocket();
+        };
+    }, [isAuthenticated, accessToken, connectSocket, disconnectSocket]);
+
+    
     if (isChecking) {
         return (
             <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#14161A' }}>

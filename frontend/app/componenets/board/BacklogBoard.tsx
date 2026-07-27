@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   DndContext, DragOverlay, closestCorners, KeyboardSensor, 
   PointerSensor, useSensor, useSensors, useDraggable, useDroppable, 
-  DragEndEvent, DragStartEvent 
+  DragEndEvent, DragStartEvent, MouseSensor,
+  TouchSensor,
 } from '@dnd-kit/core';
 import { Modal } from '../ui/Modal';
 import { apiClient } from '@/lib/api-client';
@@ -27,6 +28,7 @@ interface BacklogBoardProps {
   userRole: 'VIEWER' | 'MANAGER' | 'CONTRIBUTOR';
   onDataChanged: () => void;
   onTaskClick: (taskId: string) => void;
+  onTaskUpdated: (taskId: string, updates: Partial<Task>) => void;
 }
 
 
@@ -73,7 +75,9 @@ function DroppableZone({ id, children, className }: { id: string; children: Reac
 }
 
 
-export function BacklogBoard({ projectId, tasks, sprints, userRole, onDataChanged, onTaskClick }: BacklogBoardProps) {
+export function BacklogBoard({ 
+  projectId, tasks, sprints, userRole, onDataChanged, onTaskClick, onTaskUpdated
+}: BacklogBoardProps) {
   const { accessToken } = useAuthStore();
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -92,7 +96,12 @@ export function BacklogBoard({ projectId, tasks, sprints, userRole, onDataChange
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { 
+      activationConstraint: { distance: 5 } 
+    }),
+    useSensor(TouchSensor, { 
+      activationConstraint: { delay: 250, tolerance: 5 } 
+    }),
     useSensor(KeyboardSensor)
   );
 
@@ -107,24 +116,45 @@ export function BacklogBoard({ projectId, tasks, sprints, userRole, onDataChange
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveTask(null);
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    
+    console.log("1. Drag Ended. Active ID:", active?.id, "Over ID:", over?.id);
+
+    // If dropped completely outside a valid zone
+    if (!over) {
+      console.log("2. Aborted: Dropped outside a valid drop zone.");
+      return;
+    }
 
     const taskId = active.id as string;
     const targetSprintId = over.id === 'backlog' ? null : (over.id as string);
 
+    const draggedTask = localTasks.find(t => t.id === taskId) as any;
+    
+    if (!draggedTask) {
+      return;
+    }
+
+    const currentSprintId = draggedTask.sprintId || null;
+    const newSprintId = targetSprintId || null;
+
+    if (currentSprintId === newSprintId) {
+      return;
+    }
     setLocalTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, sprintId: targetSprintId } : t
+      t.id === taskId ? { ...t, sprintId: newSprintId } : t
     ));
+
+    onTaskUpdated(taskId, { sprintId: newSprintId });
+
+    console.log("5. Firing API Request...");
 
     try {
       await apiClient.patch(
-        `project/${projectId}/task/${taskId}`, 
-        { sprintId: targetSprintId },
+        `/project/${projectId}/task/${taskId}`, 
+        { sprintId: newSprintId },
         { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      onDataChanged(); 
-    } catch (error) {
-      console.error('Failed to move task', error);
+      )} catch (error) {
+      console.error('6. API Request FAILED:', error);
       setLocalTasks(tasks); 
     }
   };
@@ -138,7 +168,7 @@ export function BacklogBoard({ projectId, tasks, sprints, userRole, onDataChange
         { name: sprintName, startDate, endDate },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-      
+
       setIsModalOpen(false);
       setSprintName('');
       setStartDate('');

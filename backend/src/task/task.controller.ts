@@ -2,15 +2,15 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Re
 import { TaskService } from './task.service';
 import { CreateTaskDto, UpdateTaskDto, MoveTaskDto, TaskFilterDto } from './dto/task.dto';
 import { JwtAuthGuard } from '../auth/guards/jwtAuth.guard';
-import { ProjectManagerGuard, ProjectMemberGuard, ProjectContributorGuard} from '../auth/guards/project.guard';
+import { ProjectManagerGuard, ProjectMemberGuard, ProjectContributorGuard } from '../auth/guards/project.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller()
+@Controller('project/:projectId/task')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   @UseGuards(ProjectContributorGuard)
-  @Post('project/:projectId/task')
+  @Post()
   async create(
     @Req() req: { user: { userId: string } },
     @Param('projectId') projectId: string,
@@ -20,7 +20,7 @@ export class TaskController {
   }
 
   @UseGuards(ProjectMemberGuard)
-  @Get('project/:projectId/task')
+  @Get()
   async findAll(
     @Param('projectId') projectId: string,
     @Query() filters: TaskFilterDto,
@@ -29,32 +29,40 @@ export class TaskController {
   }
 
   @UseGuards(ProjectMemberGuard)
-  @Get('project/:projectId/task/:taskId') 
-  async findOne(@Param('taskId') taskId: string) {
-    return await this.taskService.findOne(taskId);
+  @Get(':taskId') 
+  async findOne(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string
+  ) {
+    return await this.taskService.findOne(projectId, taskId);
   }
 
   @UseGuards(ProjectContributorGuard)
-  @Patch('project/:projectId/task/:taskId')
+  @Patch(':taskId')
   async update(
+    @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
     @Body() dto: UpdateTaskDto,
   ) {
-    return await this.taskService.update(taskId, dto);
+    return await this.taskService.update(projectId, taskId, dto);
   }
 
   @UseGuards(ProjectMemberGuard)
-  @Patch('project/:projectId/task/:taskId/move')
+  @Patch(':taskId/move')
   async move(
+    @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
     @Body() dto: MoveTaskDto,
   ) {
-    return await this.taskService.move(taskId, dto);
+    return await this.taskService.move(projectId, taskId, dto);
   }
 
   @UseGuards(ProjectManagerGuard)
-  @Delete('project/:projectId/task/:taskId')
-  async remove(@Param('taskId') taskId: string) {
-    return await this.taskService.remove(taskId);
+  @Delete(':taskId')
+  async remove(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string
+  ) {
+    return await this.taskService.remove(projectId, taskId);
   }
 }

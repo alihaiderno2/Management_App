@@ -290,6 +290,7 @@ export class WorkspaceService {
                 role: true,
                 token: true,
                 invitedById: true,
+                acceptedAt: true,
             }
         });
         if(!invites){

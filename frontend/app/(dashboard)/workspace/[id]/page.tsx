@@ -9,6 +9,7 @@ import { Input } from '../../../componenets/ui/Input';
 import { Modal } from '../../../componenets/ui/Modal';
 import { Avatar } from '../../../componenets/ui/Avatar';
 import { Badge } from '../../../componenets/ui/Badge';
+import DeleteIcon  from '@mui/icons-material/Delete';
 
 interface Project {
   id: string;
@@ -36,6 +37,7 @@ interface Invitee {
   role: 'MEMBER' | 'ADMIN';
   createdAt: string;
   invitedById: string;
+  acceptedAt : string | null;
 }
 
 const RANK = { OWNER: 3, ADMIN: 2, MEMBER: 1, USER: 1 };
@@ -180,6 +182,19 @@ export default function WorkspaceOverviewPage() {
     }
   };
 
+  const handleDeleteInvite = async (invitee: Invitee) => {
+    const confirmed = window.confirm(`Cancel invite for ${invitee.email}?`);
+    if (!confirmed) return;
+    try{
+      await apiClient.delete(`/workspace/${workspaceId}/invites/${invitee.id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      fetchData();
+    }catch(err: any){
+      alert(err?.response?.data?.message ?? 'Could not cancel invite.');
+    }
+  }
+
   const handlePromote = async (member: Member) => {
     try {
       await apiClient.patch(
@@ -315,8 +330,10 @@ export default function WorkspaceOverviewPage() {
                         </div>
                       </div>
                       <div className= "flex items-center gap-3">
+                      {invitee.acceptedAt && <Badge variant="accent">Accepted</Badge>}
                       <Badge variant="accent">Invited by you</Badge>
                       <Badge variant={invitee.role === 'ADMIN' ? 'default' : 'default'}>{invitee.role}</Badge>
+                      {(myMembership?.role !== "USER") &&  <DeleteIcon onClick={() => handleDeleteInvite(invitee)} sx={{ color: "#ef4444", cursor: "pointer", "&:hover": { color: "#b91c1c",  },  }} />}
                       </div>
                     </div>)
                   )}

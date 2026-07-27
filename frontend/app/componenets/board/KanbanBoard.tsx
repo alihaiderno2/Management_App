@@ -12,6 +12,8 @@ import {
   DragStartEvent,
   DragEndEvent,
   useDroppable,
+  MouseSensor,
+  TouchSensor,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -31,7 +33,8 @@ export interface Task {
   title: string;
   description?: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BACKLOG';
-  order: number,
+  order: number;
+  sprintId?: string | null;
   assignee?: {
     id: string;
     name: string;
@@ -41,12 +44,12 @@ export interface Task {
 interface KanbanBoardProps {
   projectId: string;
   tasks: Task[];
+  activeSprintId?: string | null;
   userRole: 'VIEWER' | 'MANAGER' | 'CONTRIBUTOR';
   currentUserId: string;
   onTaskUpdated: (taskId: string, updates: Partial<Task>) => void;
   onTaskClick: (taskId: string) => void;
 }
-
 
 function SortableTask({ task, onClick, canDrag }: { task: Task; onClick: (id: string) => void , canDrag: boolean}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -82,7 +85,6 @@ function SortableTask({ task, onClick, canDrag }: { task: Task; onClick: (id: st
   );
 }
 
-
 function KanbanColumn({ 
   id, title, tasks, userRole, currentUserId, onTaskClick 
 }: { 
@@ -96,15 +98,17 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`bg-[#F5F5F4] rounded-2xl p-4 flex flex-col border transition-colors duration-200 ${
-        isOver ? 'border-[#0F7B6C] bg-[#E1F5EE]' : 'border-[#E4E4E1]'
-      }`}
+      className={`
+        min-w-[85vw] sm:min-w-75 md:min-w-0 snap-center shrink-0 
+        bg-[#F5F5F4] rounded-2xl p-4 flex flex-col border transition-colors duration-200 
+        ${isOver ? 'border-[#0F7B6C] bg-[#E1F5EE]' : 'border-[#E4E4E1]'}
+      `}
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-[#1B1D1F] uppercase tracking-wide">{title}</h3>
         <Badge variant="default">{tasks.length}</Badge>
       </div>
-      <div className="flex-1 overflow-y-auto pr-1 min-h-125">
+      <div className="flex-1 overflow-y-auto pr-1 min-h-75 w-full">
         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => {
             const isAssignee = task.assignee?.id === currentUserId;
@@ -122,23 +126,36 @@ function KanbanColumn({
   );
 }
 
-
-export function KanbanBoard({ projectId, tasks,userRole, currentUserId, onTaskUpdated, onTaskClick }: KanbanBoardProps) {
+export function KanbanBoard({ projectId, tasks, activeSprintId, userRole, currentUserId, onTaskUpdated, onTaskClick }: KanbanBoardProps) {
   const { accessToken } = useAuthStore();
   const [activeId, setActiveId] = useState<string | null>(null);
 
-
-  const todoTasks = tasks.filter((t) => t.status === 'TODO')
-  .sort((a, b) => a.order - b.order);
-  const inProgressTasks = tasks.filter((t) => t.status === 'IN_PROGRESS')
-  .sort((a, b) => a.order - b.order);
-  const doneTasks = tasks.filter((t) => t.status === 'DONE')
-  .sort((a, b) => a.order - b.order);
-
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { 
+      activationConstraint: { distance: 5 } 
+    }),
+    useSensor(TouchSensor, { 
+      activationConstraint: { delay: 250, tolerance: 5 } 
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+  if (!activeSprintId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-100 border border-dashed border-[#E4E4E1] rounded-2xl bg-[#FAFAFA]">
+        <h2 className="text-lg font-bold text-[#1B1D1F] mb-2">No Active Sprint</h2>
+        <p className="text-sm text-[#6B6F76]">
+          Go to the Backlog tab and start a pending sprint to view tasks on the board.
+        </p>
+      </div>
+    );
+  }
+
+  const sprintTasks = tasks.filter(t => t.sprintId === activeSprintId);
+
+  const todoTasks = sprintTasks.filter((t) => t.status === 'TODO').sort((a, b) => a.order - b.order);
+  const inProgressTasks = sprintTasks.filter((t) => t.status === 'IN_PROGRESS').sort((a, b) => a.order - b.order);
+  const doneTasks = sprintTasks.filter((t) => t.status === 'DONE').sort((a, b) => a.order - b.order);
+
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -227,7 +244,6 @@ export function KanbanBoard({ projectId, tasks,userRole, currentUserId, onTaskUp
     }
   };
 
-
   const activeDragTask = tasks.find((t) => t.id === activeId);
 
   return (
@@ -237,7 +253,7 @@ export function KanbanBoard({ projectId, tasks,userRole, currentUserId, onTaskUp
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-125">
+      <div className="flex md:grid md:grid-cols-3 gap-6 h-full min-h-125 overflow-x-auto snap-x snap-mandatory pb-6 sm:pb-0 scrollbar-hide">
         <KanbanColumn
           id="TODO" title="To Do" tasks={todoTasks}
           userRole={userRole} currentUserId={currentUserId} onTaskClick={onTaskClick} 
@@ -254,7 +270,7 @@ export function KanbanBoard({ projectId, tasks,userRole, currentUserId, onTaskUp
 
       <DragOverlay>
         {activeId && activeDragTask ? (
-          <div className="opacity-90 shadow-xl cursor-grabbing">
+          <div className="opacity-90 shadow-xl cursor-grabbing scale-105 rotate-2 transition-transform">
             <TaskCard
               task={{
                 id: activeDragTask.id,

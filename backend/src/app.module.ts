@@ -27,6 +27,8 @@ import { TasksModule } from './tasks/tasks.module';
 import { RedisModule } from './redis/redis.module';
 import {BullModule} from '@nestjs/bullmq';
 import { WorkspaceModule } from './workspace/workspace.module';
+import { ChatService } from './chat/chat.service';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [BullModule.forRoot({
@@ -55,12 +57,13 @@ import { WorkspaceModule } from './workspace/workspace.module';
     }),
     TasksModule,
     RedisModule,
-    WorkspaceModule
+    WorkspaceModule,
+    ChatModule
   ],
   controllers: [AppController, UserController, TwoFactorController, WorkspaceController, ProjectController, TaskController, SprintController],
   providers: [AppService, PrismaService, TwoFactorService, ProjectService, TaskService, SprintService, EmailService,{
       provide: APP_GUARD,
       useClass: ThrottlerGuard, 
-    }],
+    }, ChatService],
 })
 export class AppModule {}
