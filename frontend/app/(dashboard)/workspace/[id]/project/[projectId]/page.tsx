@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams} from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '../../../../../componenets/ui/Button';
@@ -12,6 +12,7 @@ import {TaskDrawer} from '../../../../../componenets/board/TaskDrawer';
 import { KanbanBoard } from '@/app/componenets/board/KanbanBoard';
 import { BacklogBoard } from '@/app/componenets/board/BacklogBoard';
 import  {ChatTester}  from '@/app/componenets/chat/chatTester';
+import Link  from 'next/link';
 
 interface Project {
   id: string;
@@ -271,10 +272,10 @@ export default function ProjectPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="mb-6 flex justify-between items-end">
+
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-sm text-[#6B6F76] mb-1">Workspace / Project</p>
-          <h1 className="text-2xl font-semibold text-[#1B1D1F]">{project.name}</h1>
+          <h1 className="text-2xl font-bold text-[#1B1D1F]">{project.name}</h1>
         </div>
 
         <div>

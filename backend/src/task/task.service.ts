@@ -114,4 +114,26 @@ export class TaskService {
       where: { id: taskId },
     });
   }
+
+  async getMyActiveTasks(userId: string) {
+        const tasks = await this.prisma.task.findMany({
+            where: {
+                assigneeId: userId,
+                status: {
+                    not: 'DONE'
+                }
+            },
+            take: 5,
+            orderBy: {
+                createdAt: 'desc'
+            },
+            include: {
+                project: {
+                    select: { name: true }
+                }
+            }
+        });
+
+        return tasks;
+    }
 }

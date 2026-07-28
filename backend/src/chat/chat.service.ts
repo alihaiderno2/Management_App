@@ -76,4 +76,31 @@ export class ChatService {
     });
     return messages.reverse();
   }
+
+  async getOrCreateDirectRoom(userId1: string, userId2: string) {
+    const directKey = [userId1, userId2].sort().join('_');
+
+    let room = await this.prisma.chatRoom.findUnique({
+      where: { directKey },
+      include: {
+        participants: true,}
+    });
+
+    if (!room) {
+      room = await this.prisma.chatRoom.create({
+        data: {
+          type: 'DIRECT',
+          directKey: directKey,
+          participants: {
+            create: [
+              { userId: userId1 },
+              { userId: userId2 },
+            ],
+          },
+        },
+        include: { participants: true },
+      });
+    }
+    return room;
+  }
 }

@@ -33,13 +33,13 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth?.token;
-      
+
       if (!token) {
         throw new Error('Missing authentication token');
       }
 
       const payload = await this.jwtService.verifyAsync(token);
-      
+
       const userId = payload.sub || payload.id || payload.userId;
       client.data.user = { userId };
 
@@ -51,7 +51,7 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
       rooms.forEach((room) => client.join(room.id));
 
       this.server.emit('user-online', { userId });
-      
+
     } catch (error: any) {
       console.error(` Socket connection rejected: ${error.message}`);
       client.disconnect();

@@ -46,7 +46,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const { accessToken } = useAuthStore.getState();
     if (!accessToken || get().socket) return;
 
-    const socket = io('http://localhost:3000', {
+    const socket = io('http://localhost:3001', {
         auth: { token: accessToken },
         });
 

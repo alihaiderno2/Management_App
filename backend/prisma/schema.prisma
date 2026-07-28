@@ -70,6 +70,7 @@ model User {
   googleId       String?         @unique
   githubId       String?         @unique
   emailVerified Boolean @default(false)
+  showOnlineStatus Boolean @default(true)
 
   taskComments   TaskComment[]
   messages       Message[]

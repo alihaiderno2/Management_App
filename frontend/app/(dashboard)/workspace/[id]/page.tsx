@@ -226,7 +226,6 @@ export default function WorkspaceOverviewPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="mb-6">
-        <p className="text-sm text-[#6B6F76] mb-1">Workspace</p>
         <h1 className="text-2xl font-semibold text-[#1B1D1F]">Workspace Overview</h1>
       </div>
 

@@ -5,12 +5,12 @@ import { JwtAuthGuard } from '../auth/guards/jwtAuth.guard';
 import { ProjectManagerGuard, ProjectMemberGuard, ProjectContributorGuard } from '../auth/guards/project.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller('project/:projectId/task')
+@Controller('')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   @UseGuards(ProjectContributorGuard)
-  @Post()
+  @Post('project/:projectId/task')
   async create(
     @Req() req: { user: { userId: string } },
     @Param('projectId') projectId: string,
@@ -20,7 +20,7 @@ export class TaskController {
   }
 
   @UseGuards(ProjectMemberGuard)
-  @Get()
+  @Get('project/:projectId/task')
   async findAll(
     @Param('projectId') projectId: string,
     @Query() filters: TaskFilterDto,
@@ -28,8 +28,18 @@ export class TaskController {
     return await this.taskService.findAll(projectId, filters);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('task/my-tasks')
+  async getMyActiveTasks(@Req() req: { user: { userId: string } }) {
+    const tasks =  await this.taskService.getMyActiveTasks(req.user.userId);
+    if(!tasks) {
+      return { success: false, message: 'No active tasks found.' };
+    }
+    return tasks;
+  }
+
   @UseGuards(ProjectMemberGuard)
-  @Get(':taskId') 
+  @Get('project/:projectId/task/:taskId') 
   async findOne(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string
@@ -38,7 +48,7 @@ export class TaskController {
   }
 
   @UseGuards(ProjectContributorGuard)
-  @Patch(':taskId')
+  @Patch('project/:projectId/task/:taskId')
   async update(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -48,7 +58,7 @@ export class TaskController {
   }
 
   @UseGuards(ProjectMemberGuard)
-  @Patch(':taskId/move')
+  @Patch('project/:projectId/task/:taskId/move')
   async move(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -58,7 +68,7 @@ export class TaskController {
   }
 
   @UseGuards(ProjectManagerGuard)
-  @Delete(':taskId')
+  @Delete('project/:projectId/task/:taskId')
   async remove(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string

@@ -4,13 +4,23 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
-import { Button} from '../../componenets/ui/Button';
+import { Button } from '../../componenets/ui/Button';
 import { Input } from '../../componenets/ui/Input';
 import { Modal } from '../../componenets/ui/Modal';
+import { Avatar } from '@/app/componenets/ui/Avatar';
+
+interface WorkspaceMember {
+  user: {
+    id: string;
+    name: string;
+    profileImage?: string;
+  };
+}
 
 interface Workspace {
   id: string;
   name: string;
+  members?: WorkspaceMember[];
 }
 
 export default function WorkspaceListPage() {
@@ -77,9 +87,11 @@ export default function WorkspaceListPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-semibold text-[#1B1D1F]">Workspaces</h1></div>
-        <div><Button variant="primary" className="w-auto px-4" onClick={() => setIsModalOpen(true)}>
-          + New workspace
-        </Button></div>
+        <div>
+          <Button variant="primary" className="w-auto px-4" onClick={() => setIsModalOpen(true)}>
+            + New workspace
+          </Button>
+        </div>
       </div>
 
       {isLoading && <p className="text-sm text-[#6B6F76]">Loading…</p>}
@@ -101,10 +113,26 @@ export default function WorkspaceListPage() {
           <button
             key={workspace.id}
             onClick={() => router.push(`/workspace/${workspace.id}`)}
-            className="text-left rounded-xl p-5 border border-[#E4E4E1] hover:border-[#0F7B6C] transition-colors"
+            className="flex items-center justify-between text-left rounded-xl p-5 border border-[#E4E4E1] hover:border-[#0F7B6C] transition-colors"
             style={{ backgroundColor: '#FFFFFF' }}
           >
-            <p className="font-bold text-[#1B1D1F]">{workspace.name}</p>
+            <p className="font-bold text-[#1B1D1F] truncate pr-4">{workspace.name}</p>
+
+            {workspace.members && workspace.members.length > 0 && (
+              <div className="flex -space-x-2 overflow-hidden flex-shrink-0">
+                {workspace.members.slice(0, 3).map((member) => (
+                  <div key={member.user.id} className="inline-block rounded-full ring-2 ring-white">
+                    <Avatar name={member.user.name} size="sm" userId={member.user.id} />
+                  </div>
+                ))}
+
+                {workspace.members.length > 3 && (
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full ring-2 ring-white bg-gray-100 text-xs font-medium text-[#6B6F76] z-10">
+                    +{workspace.members.length - 3}
+                  </div>
+                )}
+              </div>
+            )}
           </button>
         ))}
       </div>

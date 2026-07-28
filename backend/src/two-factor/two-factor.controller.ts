@@ -24,4 +24,10 @@ export class TwoFactorController {
         return {success: true, message: 'Code verified successfully'};
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('disable')
+    async disable(@Req() req:{user: {userId: string}}) {
+        return await this.twoFactorService.disableTwoFactor(req.user.userId);
+    }
+
 }

@@ -79,6 +79,8 @@ export function BacklogBoard({
   projectId, tasks, sprints, userRole, onDataChanged, onTaskClick, onTaskUpdated
 }: BacklogBoardProps) {
   const { accessToken } = useAuthStore();
+  const [formError, setFormError] = useState<string>('');
+  const today = new Date().toISOString().split('T')[0];
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -119,7 +121,6 @@ export function BacklogBoard({
     
     console.log("1. Drag Ended. Active ID:", active?.id, "Over ID:", over?.id);
 
-    // If dropped completely outside a valid zone
     if (!over) {
       console.log("2. Aborted: Dropped outside a valid drop zone.");
       return;
@@ -161,6 +162,17 @@ export function BacklogBoard({
 
   const handleCreateSprint = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(''); 
+
+    if (startDate < today) {
+      setFormError('Start date cannot be in the past.');
+      return;
+    }
+    if (endDate < startDate) {
+      setFormError('End date cannot be before the start date.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await apiClient.post(
@@ -174,8 +186,9 @@ export function BacklogBoard({
       setStartDate('');
       setEndDate('');
       onDataChanged();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create sprint', error);
+      setFormError(error?.response?.data?.message ?? 'Failed to create sprint.');
     } finally {
       setIsSubmitting(false);
     }
@@ -345,8 +358,14 @@ export function BacklogBoard({
 
       </div>
 
-      {/* CREATE SPRINT MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Sprint">
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setFormError(''); 
+        }} 
+        title="Create New Sprint"
+      >
         <form onSubmit={handleCreateSprint} className="space-y-4">
           <div>
             <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">Sprint Name</label>
@@ -355,13 +374,38 @@ export function BacklogBoard({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">Start Date</label>
-              <input required type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors" />
+              <input 
+                required 
+                type="date" 
+                min={today}
+                value={startDate} 
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setFormError('');
+                }} 
+                className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors" 
+              />
             </div>
             <div>
               <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">End Date</label>
-              <input required type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors" />
+              <input 
+                required 
+                type="date" 
+                min={startDate || today}
+                value={endDate} 
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setFormError('');
+                }} 
+                className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors" 
+              />
             </div>
           </div>
+
+          {formError && (
+            <p className="text-sm text-[#C1443A] font-medium">{formError}</p>
+          )}
+
           <div className="pt-2">
             <button type="submit" disabled={isSubmitting || !sprintName.trim()} className="w-full bg-[#0F7B6C] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#0B5C51] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {isSubmitting ? 'Creating...' : 'Create Sprint'}

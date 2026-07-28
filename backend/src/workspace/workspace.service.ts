@@ -33,18 +33,30 @@ export class WorkspaceService {
 
     async getAllUserWorkspaces(userId: string) {
         const workspaces = await this.prisma.workspaceMember.findMany({
-            where:{userId
-            },
-            include:{
+            where: { userId },
+            include: {
                 workspace: {
                     include: {
-                        members: true,
                         projects: true,
+                        members: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        profileImage: true,
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         });
-        return workspaces.map(wm => wm.workspace);
+        return workspaces.map(wm => ({
+            ...wm.workspace,
+            myRole: wm.role 
+        }));
     }
 
     // Returning the data of the workspace

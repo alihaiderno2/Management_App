@@ -98,9 +98,9 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               <ListItemText primary={<Typography sx={{ fontSize: 13, color: '#9A9CA3' }}>All workspaces</Typography>} />
             </ListItemButton>
 
-            <Typography sx={{ fontSize: 15, fontWeight: 600, color: '#F5F4F0', px: 1, mb: 2 }}>
+            <ListItemButton onClick={() => router.push(`/workspace/${workspaceId}`)} sx={{ fontSize: 25, fontWeight: 600, color: '#F5F4F0', px: 1, mb: 2 }}>
               {workspaceName || '…'}
-            </Typography>
+            </ListItemButton>
 
             <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: '#6B6F76', textTransform: 'uppercase', px: 1, mb: 1 }}>
               Projects

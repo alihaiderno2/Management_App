@@ -25,6 +25,12 @@ export class WorkspaceController {
         return await this.workspaceService.getAllUserWorkspaces(req.user.userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Get('pending-invites')
+    async pendingInvites(@Req() req: { user: { userId: string, email: string } }) {
+        return await this.workspaceService.pendingInvites(req.user.email);
+    }
+    
     @UseGuards(JwtAuthGuard,WorkspaceMemberGuard)
     @Get(':id')
     async getWorkspace(@Req() req: { user: { userId: string, email: string } }, @Param('id') id: string) {
@@ -92,11 +98,5 @@ export class WorkspaceController {
     @Get('invite-details/:token')
     async getInviteDetails(@Param('token') token: string) {
         return await this.workspaceService.getInviteDetailsByToken(token);
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @Get('pending-invites')
-    async pendingInvites(@Req() req: { user: { userId: string, email: string } }) {
-        return await this.workspaceService.pendingInvites(req.user.email);
     }
 }
