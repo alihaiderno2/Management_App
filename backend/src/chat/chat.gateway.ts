@@ -51,6 +51,10 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
       rooms.forEach((room) => client.join(room.id));
 
       this.server.emit('user-online', { userId });
+      console.log(`User ${userId} connected with socket ID: ${client.id}`);
+
+      const currentlyOnline = Array.from(this.onlineUsers.keys());
+      client.emit('online-users-list', currentlyOnline);
 
     } catch (error: any) {
       console.error(` Socket connection rejected: ${error.message}`);
@@ -67,6 +71,7 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
       if (userSockets.length === 0) {
         this.onlineUsers.delete(userId);
         this.server.emit('user-offline', { userId });
+        console.log(`User ${userId} is now offline`);
       } else {
         this.onlineUsers.set(userId, userSockets);
       }
@@ -86,6 +91,29 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
       this.server.to(payload.roomId).emit('new-message', message);
     } catch (error) {
       client.emit('error', { message: 'Failed to send message' });
+    }
+  }
+
+    @SubscribeMessage('toggle-reaction')
+  async handleToggleReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { roomId: string; messageId: string; emoji: string },
+  ) {
+    const userId = client.data.user?.userId;
+    if (!userId) return;
+    console.log('1. GATEWAY RECEIVED:', payload);
+
+    try {
+      const updatedMessage = await this.chatService.toggleReaction(userId, payload.messageId, payload.emoji);
+      if (!updatedMessage) {
+        client.emit('error', { message: 'Failed to toggle reaction' });
+        return;
+      }
+      console.log('2. DB UPDATED, BROADCASTING:', updatedMessage.id || 'No ID');
+      this.server.to(payload.roomId).emit('message-updated', updatedMessage);
+    } catch (error: any) {
+      console.error('Failed to toggle reaction:', error.message);
+      client.emit('error', { message: 'Failed to toggle reaction' });
     }
   }
 }

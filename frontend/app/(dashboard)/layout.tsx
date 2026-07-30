@@ -58,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         };
     }, [isAuthenticated, accessToken, connectSocket, disconnectSocket]);
 
-    
+
     if (isChecking) {
         return (
             <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#14161A' }}>

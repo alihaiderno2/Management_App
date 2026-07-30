@@ -103,4 +103,28 @@ export class ChatService {
     }
     return room;
   }
+
+async toggleReaction(userId: string, messageId: string, emoji: string) {
+    const existingReaction = await this.prisma.messageReaction.findUnique({
+        where: {
+            messageId_userId_emoji: { messageId, userId, emoji }
+        }
+    });
+
+    if (existingReaction) {
+        await this.prisma.messageReaction.delete({ where: { id: existingReaction.id } });
+    } else {
+        await this.prisma.messageReaction.create({
+            data: { emoji, messageId, userId }
+        });
+    }
+
+    return await this.prisma.message.findUnique({
+        where: { id: messageId },
+        include: {
+            author: { select: { id: true, name: true, profileImage: true } }, // 👈 Change 'sender' to 'author'
+            reactions: { select: { emoji: true, userId: true, user: { select: { name: true } } } }
+        }
+    });
+}
 }

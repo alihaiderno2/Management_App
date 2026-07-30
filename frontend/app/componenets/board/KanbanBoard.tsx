@@ -66,7 +66,7 @@ function SortableTask({ task, onClick, canDrag }: { task: Task; onClick: (id: st
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-3 touch-manipulation">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-3 touch-manipulation ">
       <div onPointerDown={(e) => {
         if (e.button !== 0) e.preventDefault();
       }}>

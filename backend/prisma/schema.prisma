@@ -57,53 +57,55 @@ enum NotificationWays {
 
 // User Module
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
-  passwordHash   String?
-  name           String
-  profileImage   String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  twoFAEnabled   Boolean         @default(false)
-  twoFASecret    String?
-  isDeactivated   Boolean         @default(false)
-  googleId       String?         @unique
-  githubId       String?         @unique
-  emailVerified Boolean @default(false)
-  showOnlineStatus Boolean @default(true)
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String?
+  name             String
+  profileImage     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  twoFAEnabled     Boolean  @default(false)
+  twoFASecret      String?
+  isDeactivated    Boolean  @default(false)
+  googleId         String?  @unique
+  githubId         String?  @unique
+  emailVerified    Boolean  @default(false)
+  showOnlineStatus Boolean  @default(true)
 
-  taskComments   TaskComment[]
-  messages       Message[]
-  attachments    Attachment[]
-  notifications  notification[]
-  calendarTokens CalendarToken?
-  tasksAssigned          Task[] @relation("TaskAssignee")
-  tasksCreated           Task[] @relation("TaskCreatedBy")
-  refreshTokens  RefreshToken[]
+  taskComments        TaskComment[]
+  messages            Message[]
+  attachments         Attachment[]
+  notifications       notification[]
+  calendarTokens      CalendarToken?
+  tasksAssigned       Task[]               @relation("TaskAssignee")
+  tasksCreated        Task[]               @relation("TaskCreatedBy")
+  refreshTokens       RefreshToken[]
   passwordResetTokens passwordResetToken[]
 
-  projectMemberShips ProjectMember[]
-  workspaceMemberships WorkspaceMember[]
-  chatRooms ChatRoomParticipant[]
-  sentInvites WorkspaceInvite[]
-  disabledWorkspaceMemberships WorkspaceMember[] @relation("DisabledByUser")
+  projectMemberShips           ProjectMember[]
+  workspaceMemberships         WorkspaceMember[]
+  chatRooms                    ChatRoomParticipant[]
+  sentInvites                  WorkspaceInvite[]
+  disabledWorkspaceMemberships WorkspaceMember[]     @relation("DisabledByUser")
+  messageReactions             MessageReaction[]
 }
-model RefreshToken{
-  id         String   @id @default(uuid())
-  tokenHash  String   @unique
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
 
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
-model passwordResetToken{
-  id         String   @id @default(uuid())
-  tokenHash  String   @unique
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+
+model passwordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 // WOrkspace Details
@@ -118,8 +120,9 @@ model Workspace {
   members   WorkspaceMember[]
   chatRooms ChatRoom[]
   invites   WorkspaceInvite[]
-  disabled Boolean  @default(false)
+  disabled  Boolean           @default(false)
 }
+
 // to define the workspace scope of the user
 model WorkspaceMember {
   id          String   @id @default(uuid())
@@ -128,28 +131,28 @@ model WorkspaceMember {
   role        Role     @default(USER)
   disabled    Boolean  @default(false)
   joinedAt    DateTime @default(now())
-  diabledBy String?
+  diabledBy   String?
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id])
-  disabledByUser User? @relation("DisabledByUser", fields: [diabledBy], references: [id])
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id])
+  disabledByUser User?     @relation("DisabledByUser", fields: [diabledBy], references: [id])
 
   @@unique([workspaceId, userId])
 }
 
 model WorkspaceInvite {
-  id           String        @id @default(uuid())
-  workspaceId  String
-  email        String
-  role         Role @default(USER)
-  token        String        @unique
-  invitedById  String
-  expiresAt    DateTime
-  acceptedAt   DateTime?
-  createdAt    DateTime      @default(now())
+  id          String    @id @default(uuid())
+  workspaceId String
+  email       String
+  role        Role      @default(USER)
+  token       String    @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
 
-  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  invitedBy    User          @relation(fields: [invitedById], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation(fields: [invitedById], references: [id])
 
   @@unique([workspaceId, email])
   @@index([email])
@@ -164,7 +167,7 @@ model Project {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   createdById        String
-  workspace          Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace          Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   projectMemberShips ProjectMember[]
   sprints            Sprint[]
   tasks              Task[]
@@ -173,11 +176,11 @@ model Project {
 }
 
 model ProjectMember {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   projectId String
   userId    String
-  role      ProjectRole     @default(VIEWER)
-  joinedAt  DateTime @default(now())
+  role      ProjectRole @default(VIEWER)
+  joinedAt  DateTime    @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
@@ -187,13 +190,13 @@ model ProjectMember {
 
 // Sprints inside the project
 model Sprint {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   projectId String
   name      String
   startDate DateTime
   endDate   DateTime
-  createdAt DateTime @default(now())
-  status   SprintStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  status    SprintStatus @default(PENDING)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks   Task[]
@@ -201,13 +204,13 @@ model Sprint {
 
 // Tasks inside the project details
 model Task {
-  id          String       @id @default(uuid())
+  id          String    @id @default(uuid())
   projectId   String
   sprintId    String?
   title       String
   description String?
   dueDate     DateTime?
-  order       Float          @default(0)
+  order       Float     @default(0)
 
   createdByID String
   assigneeId  String?
@@ -237,19 +240,19 @@ model TaskComment {
 }
 
 model ChatRoom {
-  id          String       @id @default(uuid())
-  name        String?
-  type        ChatRoomType
+  id   String       @id @default(uuid())
+  name String?
+  type ChatRoomType
 
   projectId   String?
   workspaceId String?
-  directKey   String?      @unique
+  directKey   String? @unique
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   participants ChatRoomParticipant[]
   messages     Message[]
@@ -265,32 +268,46 @@ model ChatRoomParticipant {
   lastReadAt DateTime?
   joinedAt   DateTime  @default(now())
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chatRoom   ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatRoom ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
 }
 
 model Message {
-  id          String      @id @default(uuid())
-  roomId      String
-  authorId    String
-  body        String
-  type        MessageType @default(TEXT)
+  id       String      @id @default(uuid())
+  roomId   String
+  authorId String
+  body     String
+  type     MessageType @default(TEXT)
 
-  replyToId   String?
+  replyToId String?
 
-  createdAt   DateTime    @default(now())
-  editedAt    DateTime?
-  deletedAt   DateTime?
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+  deletedAt DateTime?
 
-  room        ChatRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  author      User        @relation(fields: [authorId], references: [id])
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  author User     @relation(fields: [authorId], references: [id])
 
-  replyTo     Message?    @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies     Message[]   @relation("MessageReplies")
+  replyTo Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies Message[] @relation("MessageReplies")
 
   attachments Attachment[]
+  reactions   MessageReaction[]
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  emoji     String
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
 }
 
 // Attachments
@@ -309,7 +326,7 @@ model Attachment {
   task    Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   message Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  creater User    @relation(fields: [createdBy], references: [id])
+  creater User     @relation(fields: [createdBy], references: [id])
 }
 
 model notification {
@@ -324,14 +341,14 @@ model notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model CalendarToken{
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  accessToken     String?
-  refreshToken    String
-  expiresAt       DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model CalendarToken {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  accessToken  String?
+  refreshToken String
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

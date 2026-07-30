@@ -14,6 +14,7 @@ import FolderIcon from '@mui/icons-material/FolderOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVertOutlined';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
+import { useChatStore } from '@/store/chat-store';
 import { Avatar } from '@/app/componenets/ui/Avatar';
 
 const DRAWER_WIDTH = 240;
@@ -28,6 +29,12 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+interface Chat{
+  id: string;
+  name : string;
+  chatType: 'DIRECT' | 'TEAM' | 'PROJECT';
+}
+
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const params = useParams();
@@ -39,6 +46,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const [workspaceName, setWorkspaceName] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const { rooms, fetchRooms, onlineUsers } = useChatStore();
 
   useEffect(() => {
     if (mobileOpen) {
@@ -59,6 +67,12 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       .catch(() => setProjects([]));
   }, [workspaceId, accessToken]);
 
+  useEffect(() => {
+    if (accessToken) {
+      fetchRooms();
+    }
+  }, [accessToken, fetchRooms]);
+
   const handleLogout = async () => {
     try {
       await apiClient.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -67,6 +81,51 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     clearSession();
     router.push('/login');
   };
+  
+  const groupRooms = rooms.filter(r => r.type === 'PROJECT');
+  const directRooms = rooms.filter(r => r.type === 'DIRECT');
+
+  const renderDirectMessages = () => (
+    <>
+      <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: '#6B6F76', textTransform: 'uppercase', px: 1, mb: 1 }}>
+          Direct Messages
+        </Typography>
+        <List sx={{ p: 0 }}>
+          {directRooms.map((dm) => {
+            const otherParticipant = dm.participants?.find((p: any) => p.userId !== user?.id);
+            const chatName = otherParticipant?.user?.name || dm.name || 'Unknown User';
+            const otherUserId = otherParticipant?.user?.id;
+
+            const isOnline = onlineUsers.includes(otherUserId);
+
+            return (
+              <ListItemButton 
+                key={dm.id} 
+                onClick={() => router.push(`/chat/${dm.id}`)}
+                selected={pathname === `/chat/${dm.id}`} 
+                sx={{ borderRadius: 1.5, mb: 0.5, '&.Mui-selected': { bgcolor: 'rgba(15,123,108,0.2)' } }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <Box sx={{ position: 'relative' }}>
+                    <Avatar name={chatName} size="sm" userId={otherUserId} />
+                    <Box 
+                    sx={{
+                      width: 10, height: 10, borderRadius: '50%', 
+                      bgcolor: isOnline ? '#4ade80' : 'transparent',
+                      border: isOnline ? '2px solid #14161A' : '1px solid #9A9CA3',
+                      position: 'absolute', bottom: -2, right: -2,
+                      transition: 'all 0.3s ease'
+                    }} 
+                  />
+                </Box>
+                </ListItemIcon>
+                <ListItemText primary={<Typography sx={{ fontSize: 13, color: '#F5F4F0' }}>{chatName}</Typography>} />
+              </ListItemButton>
+            );
+          })}
+        </List>
+    </>
+  );
 
   const drawerContent = (
     <>
@@ -90,6 +149,28 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <ListItemText primary={<Typography sx={{ fontSize: 14, color: '#F5F4F0' }}>Settings</Typography>} />
               </ListItemButton>
             </List>
+
+            {/* CHAT SECTION */}
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: '#6B6F76', textTransform: 'uppercase', px: 1, mt: 4, mb: 1 }}>
+              Projects
+            </Typography>
+            <List sx={{ p: 0, mb: 2 }}>
+              {groupRooms.map((room) => (
+                <ListItemButton
+                  key={room.id}
+                  onClick={() => router.push(`/chat/${room.id}`)}
+                  selected={pathname === `/chat/${room.id}`}
+                  sx={{ borderRadius: 1.5, mb: 0.5, '&.Mui-selected': { bgcolor: 'rgba(15,123,108,0.2)' } }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36, color: '#9A9CA3' }}>
+                    <span className="text-lg font-light">#</span>
+                  </ListItemIcon>
+                  <ListItemText primary={<Typography sx={{ fontSize: 13, color: '#F5F4F0' }}>{room.name}</Typography>} />
+                </ListItemButton>
+              ))}
+            </List>
+
+            {renderDirectMessages()}
           </>
         ) : (
           <>
@@ -116,6 +197,9 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <Typography sx={{ fontSize: 12, color: '#6B6F76', px: 1, py: 1 }}>No projects yet</Typography>
               )}
             </List>
+
+            {/* RENDER DMs HERE AS WELL! */}
+            {renderDirectMessages()}
           </>
         )}
       </Box>
@@ -141,7 +225,6 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
   return (
     <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
-      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -155,7 +238,6 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         {drawerContent}
       </Drawer>
 
-       {/* Desktop Drawer */}
       <Drawer
         variant="permanent"
         sx={{

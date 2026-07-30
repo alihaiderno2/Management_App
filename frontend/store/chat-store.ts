@@ -3,6 +3,13 @@ import { io, Socket } from 'socket.io-client';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from './auth-store';
 
+export interface Reaction {
+  id: string;
+  emoji: string;
+  userId: string;
+  messageId: string;
+}
+
 export interface Message {
   id: string;
   body: string;
@@ -10,12 +17,13 @@ export interface Message {
   authorId: string;
   createdAt: string;
   author: { id: string; name: string; profileImage: string | null };
+  reactions?: Reaction[];
 }
 
 export interface ChatRoom {
   id: string;
   name: string | null;
-  type: 'DIRECT' | 'GROUP';
+  type: 'DIRECT' | 'GROUP' | 'PROJECT';
   participants: any[];
   messages: Message[]; 
 }
@@ -26,6 +34,7 @@ interface ChatState {
   activeRoomId: string | null;
   messages: Message[];
   isConnected: boolean;
+  onlineUsers: string[]; 
   
   connectSocket: () => void;
   disconnectSocket: () => void;
@@ -33,6 +42,7 @@ interface ChatState {
   setActiveRoom: (roomId: string) => Promise<void>;
   sendMessage: (roomId: string, content: string) => void;
   addMessage: (message: Message) => void;
+  toggleReaction: (roomId: string, messageId: string, emoji: string) => void; 
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -41,6 +51,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeRoomId: null,
   messages: [],
   isConnected: false,
+  onlineUsers: [],
 
   connectSocket: () => {
     const { accessToken } = useAuthStore.getState();
@@ -48,10 +59,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const socket = io('http://localhost:3001', {
         auth: { token: accessToken },
-        });
+    });
 
     socket.on('connect', () => set({ isConnected: true }));
-    socket.on('disconnect', () => set({ isConnected: false }));
+    socket.on('disconnect', () => set({ isConnected: false, onlineUsers: [] }));
+    
+    socket.on('online-users-list', (userIds: string[]) => {
+      set({ onlineUsers: userIds });
+    });
+
+    socket.on('user-online', ({ userId }: { userId: string }) => {
+      set((state) => ({
+        onlineUsers: state.onlineUsers.includes(userId) 
+          ? state.onlineUsers 
+          : [...state.onlineUsers, userId]
+      }));
+    });
+
+    socket.on('user-offline', ({ userId }: { userId: string }) => {
+      set((state) => ({
+        onlineUsers: state.onlineUsers.filter(id => id !== userId)
+      }));
+    });
 
     socket.on('new-message', (message: Message) => {
       const { activeRoomId, messages, rooms } = get();
@@ -68,6 +97,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ rooms: updatedRooms });
     });
 
+    socket.on('message-updated', (updatedMessage: Message) => {
+      console.log('3. FRONTEND RECEIVED UPDATE:', updatedMessage);
+      
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.id === updatedMessage.id ? updatedMessage : msg
+        )
+      }));
+    });
+
     set({ socket });
   },
 
@@ -75,7 +114,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const { socket } = get();
     if (socket) {
       socket.disconnect();
-      set({ socket: null, isConnected: false });
+      set({ socket: null, isConnected: false, onlineUsers: [] });
     }
   },
 
@@ -109,6 +148,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const { socket } = get();
     if (socket && content.trim()) {
       socket.emit('send-message', { roomId, content });
+    }
+  },
+  
+  toggleReaction: (roomId: string, messageId: string, emoji: string) => {
+    const { socket } = get();
+    if (socket) {
+      socket.emit('toggle-reaction', { roomId, messageId, emoji });
     }
   },
   

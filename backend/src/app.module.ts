@@ -40,8 +40,8 @@ import { ProjectModule } from './project/project.module';
     },
   }),
     RedisModule,ThrottlerModule.forRoot([{
-      ttl: 60000, 
-      limit: 100,  
+      ttl: 60000,
+      limit: 100,
     }]),
     PrismaModule, UserModule, AuthModule, TwoFactorModule,
     MailerModule.forRoot({
