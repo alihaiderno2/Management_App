@@ -6,6 +6,7 @@ import { Avatar } from '@/app/componenets/ui/Avatar';
 import { useChatStore } from '@/store/chat-store';
 import { useAuthStore } from '@/store/auth-store';
 import { Badge } from '@/app/componenets/ui/Badge';
+import { apiClient } from '@/lib/api-client';
 
 const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '🔥', '🎉', '👀', '🙌', '✨', '💯', '🚀', '✅'];
 
@@ -21,6 +22,8 @@ export default function ChatRoomPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const prevMessageCount = useRef(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (roomId) {
@@ -58,6 +61,42 @@ export default function ChatRoomPage() {
     setShowEmojiPicker(false);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setIsUploading(true);
+  try {
+    const { accessToken } = useAuthStore.getState();
+
+    const { data } = await apiClient.get('/upload/presigned-url', {
+      params: { fileName: file.name, fileType: file.type },
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    await fetch(data.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type }
+    });
+
+    sendMessage(roomId, '', {
+      fileUrl: data.fileUrl,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+    });
+
+
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to upload file.');
+  } finally {
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+};
+
   const currentRoom = rooms.find(r => r.id === roomId);
   let roomName = currentRoom?.name || 'Loading...';
   let isDirectOnline = false; 
@@ -90,6 +129,7 @@ export default function ChatRoomPage() {
       {/* Message Feed */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
         {messages.map((msg) => {
+          const attachment = msg.attachments?.[0];
           const groupedReactions = msg.reactions?.reduce((acc, rx) => {
             if (!acc[rx.emoji]) acc[rx.emoji] = [];
             acc[rx.emoji].push(rx);
@@ -109,14 +149,56 @@ export default function ChatRoomPage() {
                     {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                
-                <div className={`text-[#1B1D1F] leading-relaxed whitespace-pre-wrap mb-1 ${
-                  QUICK_EMOJIS.includes(msg.body.trim()) && msg.body.trim().length <= 2 
-                    ? 'text-4xl py-1' 
-                    : 'text-[15px]'
-                }`}>
-                  {msg.body}
-                </div>
+
+            
+                {msg.body && msg.body.trim().length > 0 && (
+                  <div className={`text-[#1B1D1F] leading-relaxed whitespace-pre-wrap mb-1 ${
+                    QUICK_EMOJIS.includes(msg.body.trim()) && msg.body.trim().length <= 2 
+                      ? 'text-4xl py-1' 
+                      : 'text-[15px]'
+                  }`}>
+                    {msg.body}
+                  </div>
+                )}
+
+                {attachment && (
+                  <div className="mt-2 mb-2">
+                    {attachment.fileType?.startsWith('image/') ? (
+                      <a href={attachment.fileUrl} target="_blank" rel="noopener noreferrer">
+                        <img 
+                          src={attachment.fileUrl} 
+                          alt={attachment.fileName || 'Attached image'} 
+                          className="max-w-xs md:max-w-sm max-h-64 object-cover rounded-xl border border-[#E4E4E1] hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                        />
+                      </a>
+                    ) : (
+                      <a 
+                        href={attachment.fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-xl border border-[#E4E4E1] bg-[#F9FAFB] hover:bg-[#F5F5F4] transition-colors max-w-sm cursor-pointer group shadow-sm"
+                      >
+                        <div className="p-2 bg-white rounded-lg border border-[#E4E4E1] text-[#0F7B6C] group-hover:scale-105 transition-transform">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-bold text-[#1B1D1F] truncate leading-tight">
+                            {attachment.fileName || 'Attached Document'}
+                          </p>
+                          <p className="text-[12px] font-medium text-[#9A9CA3] mt-0.5">
+                            {attachment.fileSize ? `${(attachment.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • {attachment.fileType?.split('/')[1]?.toUpperCase() || 'FILE'}
+                          </p>
+                        </div>
+                      </a>
+                    )}
+                  </div>
+                )}
+
 
                 {/* Render the Reaction Badges */}
                 {Object.keys(groupedReactions).length > 0 && (
@@ -207,10 +289,23 @@ export default function ChatRoomPage() {
               }
             }}
           />
-          
+
           <div className="flex items-center justify-between px-2 pb-2 bg-[#F9FAFB]">
             <div className="flex gap-1 text-[#6B6F76]">
-              <button className="p-1.5 hover:bg-[#E4E4E1] hover:text-[#1B1D1F] rounded-md transition-colors" title="Attach file">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className={`p-1.5 rounded-md transition-colors ${isUploading ? 'opacity-50 animate-pulse' : 'hover:bg-[#E4E4E1] hover:text-[#1B1D1F]'}`} 
+                title="Attach file"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
               </button>
               <button 

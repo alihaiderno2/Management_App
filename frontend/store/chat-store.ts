@@ -10,6 +10,13 @@ export interface Reaction {
   messageId: string;
 }
 
+interface AttachmentPayload {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  fileUrl: string;
+}
+
 export interface Message {
   id: string;
   body: string;
@@ -18,6 +25,7 @@ export interface Message {
   createdAt: string;
   author: { id: string; name: string; profileImage: string | null };
   reactions?: Reaction[];
+  attachments?: AttachmentPayload[];
 }
 
 export interface ChatRoom {
@@ -40,7 +48,7 @@ interface ChatState {
   disconnectSocket: () => void;
   fetchRooms: () => Promise<void>;
   setActiveRoom: (roomId: string) => Promise<void>;
-  sendMessage: (roomId: string, content: string) => void;
+  sendMessage: (roomId: string, content: string, attachment?: AttachmentPayload) => void;
   addMessage: (message: Message) => void;
   toggleReaction: (roomId: string, messageId: string, emoji: string) => void; 
 }
@@ -144,13 +152,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  sendMessage: (roomId: string, content: string) => {
+  sendMessage: (roomId: string, content: string, attachment?: AttachmentPayload) => {
     const { socket } = get();
-    if (socket && content.trim()) {
-      socket.emit('send-message', { roomId, content });
+    if (socket && (content.trim() || attachment)) {
+      socket.emit('send-message', { roomId, content, attachment });
     }
   },
-  
+
   toggleReaction: (roomId: string, messageId: string, emoji: string) => {
     const { socket } = get();
     if (socket) {

@@ -78,20 +78,29 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
     }
   }
 
-  @SubscribeMessage('send-message')
+ @SubscribeMessage('send-message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; content: string },
+    @MessageBody() payload: { 
+      roomId: string; 
+      content: string; 
+      replyToId?: string;
+      attachment?: { fileName: string; fileType: string; fileSize: number; fileUrl: string; } 
+    },
   ) {
     const userId = client.data.user?.userId;
     if (!userId) return;
 
-    try {
-      const message = await this.chatService.saveMessage(userId, payload.roomId, payload.content);
-      this.server.to(payload.roomId).emit('new-message', message);
-    } catch (error) {
-      client.emit('error', { message: 'Failed to send message' });
-    }
+    // Pass the attachment payload to the service
+    const message = await this.chatService.saveMessage(
+      userId, 
+      payload.roomId, 
+      payload.content,
+      payload.replyToId,
+      payload.attachment 
+    );
+
+    this.server.to(payload.roomId).emit('new-message', message);
   }
 
     @SubscribeMessage('toggle-reaction')
@@ -114,6 +123,15 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
     } catch (error: any) {
       console.error('Failed to toggle reaction:', error.message);
       client.emit('error', { message: 'Failed to toggle reaction' });
+    }
+  }
+
+  public emitToUser(userId: string, event: string, payload: any) {
+    const userSockets = this.onlineUsers.get(userId);
+    if (userSockets && userSockets.length > 0) {
+      userSockets.forEach((socketId) => {
+        this.server.to(socketId).emit(event, payload);
+      });
     }
   }
 }

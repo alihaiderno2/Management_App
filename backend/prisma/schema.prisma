@@ -49,6 +49,14 @@ enum ChatRoomType {
   DIRECT
 }
 
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_UPDATED
+  MENTION
+  SYSTEM_ALERT
+  SPRINT_ENDING
+}
+
 enum NotificationWays {
   APP
   EMAIL
@@ -75,7 +83,8 @@ model User {
   taskComments        TaskComment[]
   messages            Message[]
   attachments         Attachment[]
-  notifications       notification[]
+  notificationsReceived  Notification[] @relation("ReceivedNotifications")
+  notificationsTriggered Notification[] @relation("TriggeredNotifications")
   calendarTokens      CalendarToken?
   tasksAssigned       Task[]               @relation("TaskAssignee")
   tasksCreated        Task[]               @relation("TaskCreatedBy")
@@ -329,16 +338,27 @@ model Attachment {
   creater User     @relation(fields: [createdBy], references: [id])
 }
 
-model notification {
-  id        String           @id @default(uuid())
-  userId    String
-  way       NotificationWays
-  payload   Json
-  status    String
-  createdAt DateTime         @default(now())
-  sentAt    DateTime?
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  actorId     String?
+  
+  type        NotificationType
+  way         NotificationWays @default(APP)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  body        String
+  link        String?
+  isRead      Boolean          @default(false)
+
+  payload     Json?
+  status      String
+  
+  createdAt   DateTime         @default(now())
+  sentAt      DateTime?
+
+  user        User  @relation("ReceivedNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor       User? @relation("TriggeredNotifications", fields: [actorId], references: [id], onDelete: SetNull)
 }
 
 model CalendarToken {
