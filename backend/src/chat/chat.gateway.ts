@@ -51,6 +51,10 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
       rooms.forEach((room) => client.join(room.id));
 
       this.server.emit('user-online', { userId });
+      console.log(`User ${userId} connected with socket ID: ${client.id}`);
+
+      const currentlyOnline = Array.from(this.onlineUsers.keys());
+      client.emit('online-users-list', currentlyOnline);
 
     } catch (error: any) {
       console.error(` Socket connection rejected: ${error.message}`);
@@ -67,25 +71,67 @@ export class ChatGateway implements OnGatewayInit,OnGatewayConnection, OnGateway
       if (userSockets.length === 0) {
         this.onlineUsers.delete(userId);
         this.server.emit('user-offline', { userId });
+        console.log(`User ${userId} is now offline`);
       } else {
         this.onlineUsers.set(userId, userSockets);
       }
     }
   }
 
-  @SubscribeMessage('send-message')
+ @SubscribeMessage('send-message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; content: string },
+    @MessageBody() payload: { 
+      roomId: string; 
+      content: string; 
+      replyToId?: string;
+      attachment?: { fileName: string; fileType: string; fileSize: number; fileUrl: string; } 
+    },
   ) {
     const userId = client.data.user?.userId;
     if (!userId) return;
 
+    // Pass the attachment payload to the service
+    const message = await this.chatService.saveMessage(
+      userId, 
+      payload.roomId, 
+      payload.content,
+      payload.replyToId,
+      payload.attachment 
+    );
+
+    this.server.to(payload.roomId).emit('new-message', message);
+  }
+
+    @SubscribeMessage('toggle-reaction')
+  async handleToggleReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { roomId: string; messageId: string; emoji: string },
+  ) {
+    const userId = client.data.user?.userId;
+    if (!userId) return;
+    console.log('1. GATEWAY RECEIVED:', payload);
+
     try {
-      const message = await this.chatService.saveMessage(userId, payload.roomId, payload.content);
-      this.server.to(payload.roomId).emit('new-message', message);
-    } catch (error) {
-      client.emit('error', { message: 'Failed to send message' });
+      const updatedMessage = await this.chatService.toggleReaction(userId, payload.messageId, payload.emoji);
+      if (!updatedMessage) {
+        client.emit('error', { message: 'Failed to toggle reaction' });
+        return;
+      }
+      console.log('2. DB UPDATED, BROADCASTING:', updatedMessage.id || 'No ID');
+      this.server.to(payload.roomId).emit('message-updated', updatedMessage);
+    } catch (error: any) {
+      console.error('Failed to toggle reaction:', error.message);
+      client.emit('error', { message: 'Failed to toggle reaction' });
+    }
+  }
+
+  public emitToUser(userId: string, event: string, payload: any) {
+    const userSockets = this.onlineUsers.get(userId);
+    if (userSockets && userSockets.length > 0) {
+      userSockets.forEach((socketId) => {
+        this.server.to(socketId).emit(event, payload);
+      });
     }
   }
 }

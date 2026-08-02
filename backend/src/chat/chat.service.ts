@@ -13,7 +13,13 @@ export class ChatService {
     return rooms.map((participant) => participant.chatRoom);
   }
 
-  async saveMessage(userId: string, roomId: string, message: string, replyToId?: string) {
+  async saveMessage(
+    userId: string, 
+    roomId: string, 
+    message: string, 
+    replyToId?: string,
+    attachment?: { fileName: string; fileType: string; fileSize: number; fileUrl: string; }
+  ) {
     const participant = await this.prisma.chatRoomParticipant.findUnique({
       where: {
         roomId_userId: {
@@ -31,12 +37,25 @@ export class ChatService {
       data: {
         roomId,
         authorId: userId,
-        body: message,
-        type: 'TEXT',
-        replyToId: replyToId || null
+        body: message || '', 
+        type: attachment ? 'FILE' : 'TEXT',
+        replyToId: replyToId || null,
+        ...(attachment && {
+          attachments: {
+            create: {
+              fileName: attachment.fileName,
+              fileType: attachment.fileType,
+              fileSize: attachment.fileSize,
+              fileUrl: attachment.fileUrl,
+              createdBy: userId,
+            }
+          }
+        })
       },
       include: {
         author: { select: { id: true, name: true, profileImage: true } },
+        attachments: true,
+        reactions: { select: { emoji: true, userId: true, user: { select: { name: true } } } }
       }
     });
   }
@@ -103,4 +122,28 @@ export class ChatService {
     }
     return room;
   }
+
+async toggleReaction(userId: string, messageId: string, emoji: string) {
+    const existingReaction = await this.prisma.messageReaction.findUnique({
+        where: {
+            messageId_userId_emoji: { messageId, userId, emoji }
+        }
+    });
+
+    if (existingReaction) {
+        await this.prisma.messageReaction.delete({ where: { id: existingReaction.id } });
+    } else {
+        await this.prisma.messageReaction.create({
+            data: { emoji, messageId, userId }
+        });
+    }
+
+    return await this.prisma.message.findUnique({
+        where: { id: messageId },
+        include: {
+            author: { select: { id: true, name: true, profileImage: true } }, 
+            reactions: { select: { emoji: true, userId: true, user: { select: { name: true } } } }
+        }
+    });
+}
 }

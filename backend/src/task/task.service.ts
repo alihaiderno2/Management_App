@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto, UpdateTaskDto, MoveTaskDto, TaskFilterDto } from './dto/task.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService
+  ) {}
 
   async create(projectId: string, createdByID: string, dto: CreateTaskDto) {
     const lastTask = await this.prisma.task.findFirst({
@@ -33,6 +36,14 @@ export class TaskService {
       },
     });
 
+    const userID = dto.assigneeId || "non";
+    await this.notificationService.dispatch({
+      userId: userID,
+      actorId: createdByID,
+      type: 'TASK_ASSIGNED',
+      title: dto.title,
+      body: dto.description || "non",
+    });
     return task;
   }
 

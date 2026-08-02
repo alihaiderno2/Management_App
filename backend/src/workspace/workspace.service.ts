@@ -257,8 +257,10 @@ export class WorkspaceService {
             where:{
                 workspaceId,
                 email,
+                acceptedAt: null
             }
         });
+
         if(!!alreadyInvited){
             throw new UnprocessableEntityException('Invite to this user has already been sent.');
         }

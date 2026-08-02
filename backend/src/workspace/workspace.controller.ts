@@ -77,7 +77,7 @@ export class WorkspaceController {
         return await this.workspaceService.inviteMemberToWorkspace(req.user.userId, workspaceId, body.email, body.role);
     }
 
-    @UseGuards(JwtAuthGuard, WorkspaceAdminGuard)
+    @UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
     @Get(':id/invites')
     async getWorkspaceInvites(@Req() req: {user : {userId:string, email: string}}, @Param('id') workspaceId: string) {
         return await this.workspaceService.getWorkspaceInvites(workspaceId);

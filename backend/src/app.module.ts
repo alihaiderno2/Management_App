@@ -31,6 +31,9 @@ import { ChatService } from './chat/chat.service';
 import { ChatModule } from './chat/chat.module';
 import { TaskModule } from './task/task.module';
 import { ProjectModule } from './project/project.module';
+import { UploadService } from './upload/upload.service';
+import { UploadController } from './upload/upload.controller';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [BullModule.forRoot({
@@ -40,8 +43,8 @@ import { ProjectModule } from './project/project.module';
     },
   }),
     RedisModule,ThrottlerModule.forRoot([{
-      ttl: 60000, 
-      limit: 100,  
+      ttl: 60000,
+      limit: 100,
     }]),
     PrismaModule, UserModule, AuthModule, TwoFactorModule,
     MailerModule.forRoot({
@@ -62,12 +65,13 @@ import { ProjectModule } from './project/project.module';
     WorkspaceModule,
     ChatModule,
     TaskModule,
-    ProjectModule
+    ProjectModule,
+    NotificationModule
   ],
-  controllers: [AppController, UserController, TwoFactorController, WorkspaceController, ProjectController, TaskController, SprintController],
+  controllers: [AppController, UserController, TwoFactorController, WorkspaceController, ProjectController, TaskController, SprintController, UploadController],
   providers: [AppService, PrismaService, TwoFactorService, ProjectService, TaskService, SprintService, EmailService,{
       provide: APP_GUARD,
       useClass: ThrottlerGuard, 
-    }, ChatService],
+    }, ChatService, UploadService],
 })
 export class AppModule {}

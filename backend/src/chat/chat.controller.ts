@@ -10,7 +10,8 @@ export class ChatController {
   @Get('rooms')
   async getMyRooms(@Req() req: { user: { userId: string } }) {
     console.log('Fetching chat rooms for user:', req.user.userId);
-    return await this.chatService.getUserChatRoomsDetailed(req.user.userId);
+    const rooms =  await this.chatService.getUserChatRoomsDetailed(req.user.userId);
+    return rooms;
   }
 
   @Get('rooms/:roomId/messages')

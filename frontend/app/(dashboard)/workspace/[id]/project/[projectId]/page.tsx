@@ -1,18 +1,16 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { useRouter, useParams} from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '../../../../../componenets/ui/Button';
 import { Modal } from '../../../../../componenets/ui/Modal';
 import { Avatar } from '../../../../../componenets/ui/Avatar';
 import { Badge } from '../../../../../componenets/ui/Badge';
-import {TaskDrawer} from '../../../../../componenets/board/TaskDrawer';
+import { TaskDrawer } from '../../../../../componenets/board/TaskDrawer';
 import { KanbanBoard } from '@/app/componenets/board/KanbanBoard';
 import { BacklogBoard } from '@/app/componenets/board/BacklogBoard';
-import  {ChatTester}  from '@/app/componenets/chat/chatTester';
-import Link  from 'next/link';
 
 interface Project {
   id: string;
@@ -55,11 +53,10 @@ export default function ProjectPage() {
   const projectId = params.projectId as string;
   const { accessToken, user } = useAuthStore();
 
-  // Project and members state
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [activeTab, setActiveTab] = useState<'backlog' |'board' | 'settings'>('board');
+  const [activeTab, setActiveTab] = useState<'backlog' | 'board' | 'settings'>('board');
   const [settingsView, setSettingsView] = useState<'general' | 'members'>('general');
   
   const [isDeleting, setIsDeleting] = useState(false);
@@ -68,6 +65,7 @@ export default function ProjectPage() {
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
+  
   const myProjectMembership = projectMembers.find((pm) => pm.user.email === user?.email);
   const isManager = myProjectMembership?.role === 'MANAGER';
 
@@ -76,6 +74,7 @@ export default function ProjectPage() {
   const [selectedRole, setSelectedRole] = useState<'MANAGER' | 'CONTRIBUTOR' | 'VIEWER'>('CONTRIBUTOR');
   const [addMemberError, setAddMemberError] = useState('');
   const [isAddingMember, setIsAddingMember] = useState(false);
+  
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
@@ -85,7 +84,6 @@ export default function ProjectPage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-
   const [sprints, setSprints] = useState<any[]>([]);
 
   const fetchProjectData = async () => {
@@ -93,7 +91,6 @@ export default function ProjectPage() {
       const headers = { Authorization: `Bearer ${accessToken}` };
       const response = await apiClient.get(`/workspace/${workspaceId}/project/${projectId}`, { headers });
       setProject(response.data);
-
     } catch (err) {
       console.error('Could not load project details', err);
     } finally {
@@ -130,7 +127,7 @@ export default function ProjectPage() {
       const headers = { Authorization: `Bearer ${accessToken}` };
       const response = await apiClient.get(`/project/${projectId}/sprint`, { headers });
       setSprints(response.data);
-    }catch (err) {
+    } catch (err) {
       console.error('Could not load sprints', err);
     }
   }
@@ -240,8 +237,6 @@ export default function ProjectPage() {
       setTaskDescription('');
       setTaskAssignee('');
       setIsNewTaskOpen(false);
-
-      alert('Task created successfully!');
       fetchTasksData();
 
     } catch (err: any) {
@@ -270,25 +265,22 @@ export default function ProjectPage() {
   if (!project) return <p className="text-sm text-[#C1443A]">Project not found.</p>;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex flex-col min-h-screen">
+      {/* 1. Header (Mobile Responsive) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#1B1D1F]">{project.name}</h1>
+          <h1 className="text-2xl font-bold text-[#1B1D1F] truncate max-w-full">{project.name}</h1>
         </div>
 
-        <div>
         {myProjectMembership?.role !== 'VIEWER' && (
-          <Button variant="primary" className="w-auto px-4" onClick={() => setIsNewTaskOpen(true)}>
+          <Button variant="primary" className="w-full sm:w-auto px-4" onClick={() => setIsNewTaskOpen(true)}>
             + New Task
           </Button>
         )}
-        </div>
       </div>
 
-      {/* Control Tabs */}
-      <div className="flex space-x-6 border-b border-[#E4E4E1] mb-6">
+      {/* 2. Control Tabs (Mobile Responsive - Scrollable) */}
+      <div className="flex space-x-6 border-b border-[#E4E4E1] mb-6 overflow-x-auto whitespace-nowrap scrollbar-hide pb-0">
         <button
           onClick={() => setActiveTab('backlog')}
           className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
@@ -316,9 +308,8 @@ export default function ProjectPage() {
       </div>
 
       {/* Main Canvas */}
-      <div className="flex-1">
+      <div className="flex-1 " >
 
-        {/* BACKLOG VIEW */}
         {activeTab === 'backlog' && (
           <BacklogBoard
             projectId={projectId as string}
@@ -344,11 +335,12 @@ export default function ProjectPage() {
         )}
 
         {activeTab === 'settings' && (
-          <div className="flex gap-8">
-            <div className="w-48 shrink-0 flex flex-col space-y-1">
+          // 3. Settings View (Mobile Responsive Stack)
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+            <div className="w-full md:w-48 shrink-0 flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto pb-2 md:pb-0">
               <button
                 onClick={() => setSettingsView('general')}
-                className={`text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
                   settingsView === 'general' ? 'bg-[#E1F5EE] text-[#0F7B6C]' : 'text-[#6B6F76] hover:bg-[#F5F5F4] hover:text-[#1B1D1F]'
                 }`}
               >
@@ -356,7 +348,7 @@ export default function ProjectPage() {
               </button>
               <button
                 onClick={() => setSettingsView('members')}
-                className={`text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
                   settingsView === 'members' ? 'bg-[#E1F5EE] text-[#0F7B6C]' : 'text-[#6B6F76] hover:bg-[#F5F5F4] hover:text-[#1B1D1F]'
                 }`}
               >
@@ -364,14 +356,13 @@ export default function ProjectPage() {
               </button>
             </div>
 
-            <div className="flex-1 max-w-2xl bg-[#FFFFFF] rounded-2xl border border-[#E4E4E1] p-6">
-
+            <div className="flex-1 max-w-2xl bg-[#FFFFFF] rounded-2xl border border-[#E4E4E1] p-4 sm:p-6">
               {settingsView === 'general' && (
                 <div>
                   <h2 className="text-lg font-semibold text-[#1B1D1F] mb-4">Project Details</h2>
                   <div className="mb-8">
                     <p className="text-sm font-bold text-[#1B1D1F] mb-1">Description</p>
-                    <p className="text-sm text-[#6B6F76]">{project.description || 'No description provided.'}</p>
+                    <p className="text-sm text-[#6B6F76] break-words">{project.description || 'No description provided.'}</p>
                   </div>
 
                   <hr className="border-[#E4E4E1] my-6" />
@@ -386,7 +377,7 @@ export default function ProjectPage() {
                       variant="primary" 
                       onClick={handleDeleteProject} 
                       disabled={isDeleting}
-                      className="bg-[#C1443A]! hover:bg-[#A33931]! border-none! w-auto px-4"
+                      className="bg-[#C1443A]! hover:bg-[#A33931]! border-none! w-full sm:w-auto px-4"
                     >
                       {isDeleting ? 'Deleting...' : 'Delete Project'}
                     </Button>
@@ -394,56 +385,52 @@ export default function ProjectPage() {
                 </div>
               )}
 
-              {/* MEMBERS VIEW */}
               {settingsView === 'members' && (
                 <div>
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                     <div>
                       <h2 className="text-lg font-semibold text-[#1B1D1F]">Project Members</h2>
                       <p className="text-sm text-[#6B6F76]">Manage who has access to this project.</p>
                     </div>
-                    <div>
-
-                      {isManager && (
-                        <Button variant="primary" className="w-auto px-4" onClick={() => setIsAddMemberOpen(true)}>
-                          + Add Member
-                        </Button>
-                      )}
-                    </div>
+                    {isManager && (
+                      <Button variant="primary" className="w-full sm:w-auto px-4" onClick={() => setIsAddMemberOpen(true)}>
+                        + Add Member
+                      </Button>
+                    )}
                   </div>
 
+                  {/* 4. Member List (Mobile Responsive Items) */}
                   <div className="border border-[#E4E4E1] rounded-xl overflow-visible">
                     {projectMembers.map((member, i) => (
                       <div
                         key={member.user.id}
-                        className={`flex items-center justify-between px-4 py-3 ${i !== projectMembers.length - 1 ? 'border-b border-[#F0F0EE]' : ''}`}
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 gap-3 ${i !== projectMembers.length - 1 ? 'border-b border-[#F0F0EE]' : ''}`}
                       >
                         <div className="flex items-center gap-3">
                           <Avatar name={member.user.name} size="sm" userId={member.user.id} />
-                          <div>
-                            <p className="text-sm text-[#1B1D1F]">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-[#1B1D1F] truncate">
                               {member.user.name}
                               {member.user.email === user?.email && <span className="text-[#9A9CA3] font-normal"> (you)</span>}
                             </p>
-                            <p className="text-xs text-[#9A9CA3]">{member.user.email}</p>
+                            <p className="text-xs text-[#9A9CA3] truncate">{member.user.email}</p>
                           </div>
                         </div>
 
-                        <div className={`flex items-center gap-3 relative ${openMenuFor === member.user.id ? 'z-50' : 'z-10'}`}>
+                        <div className={`flex items-center justify-between sm:justify-end gap-3 relative w-full sm:w-auto mt-2 sm:mt-0 ${openMenuFor === member.user.id ? 'z-50' : 'z-10'}`}>
                           <Badge variant={member.role === 'MANAGER' ? 'accent' : 'default'}>{member.role}</Badge>
 
                           {isManager && (
                             <>
                               <button
                                 onClick={() => setOpenMenuFor(openMenuFor === member.user.id ? null : member.user.id)}
-                                className="text-[#9A9CA3] hover:text-[#1B1D1F] px-1"
+                                className="text-[#9A9CA3] hover:text-[#1B1D1F] px-2 py-1"
                               >
                                 ⋯
                               </button>
 
                               {openMenuFor === member.user.id && (
                                 <div className="absolute right-0 top-8 z-10 w-44 rounded-lg border border-[#E4E4E1] shadow-lg bg-[#FFFFFF] overflow-hidden">
-                                  {/* Display role options the user DOES NOT currently have */}
                                   {member.role !== 'MANAGER' && (
                                     <button
                                       onClick={() => handleUpdateRole(member.user.id, 'MANAGER')}
@@ -493,7 +480,6 @@ export default function ProjectPage() {
         )}
       </div>
 
-      {/* Add Project Member Modal */}
       <Modal isOpen={isAddMemberOpen} onClose={() => setIsAddMemberOpen(false)} title="Add to Project">
         <form onSubmit={handleAddMember} className="space-y-4">
           <div>
@@ -512,16 +498,13 @@ export default function ProjectPage() {
                 </option>
               ))}
             </select>
-            {availableWorkspaceMembers.length === 0 && (
-              <p className="text-xs text-[#9A9CA3] mt-1">All workspace members are already in this project.</p>
-            )}
           </div>
 
           <div>
             <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">
               Project Role
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedRole('VIEWER')}
@@ -553,13 +536,12 @@ export default function ProjectPage() {
           </div>
 
           {addMemberError && <p className="text-sm text-[#C1443A]">{addMemberError}</p>}
-          <Button variant="primary" type="submit" disabled={isAddingMember || !selectedUserId}>
+          <Button variant="primary" type="submit" disabled={isAddingMember || !selectedUserId} className="w-full">
             {isAddingMember ? 'Adding…' : 'Add Member'}
           </Button>
         </form>
       </Modal>
 
-      {/* Create New Task Modal */}
       <Modal isOpen={isNewTaskOpen} onClose={() => setIsNewTaskOpen(false)} title="Create New Task">
         <form onSubmit={handleCreateTask} className="space-y-4">
           <div>
@@ -609,22 +591,20 @@ export default function ProjectPage() {
           {taskError && <p className="text-sm text-[#C1443A]">{taskError}</p>}
 
           <div className="pt-2">
-            <Button variant="primary" type="submit" disabled={isCreatingTask || !taskTitle.trim()}>
+            <Button variant="primary" type="submit" disabled={isCreatingTask || !taskTitle.trim()} className="w-full">
               {isCreatingTask ? 'Creating...' : 'Create Task'}
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* The Task Slide-Over Drawer */}
-        <TaskDrawer 
-          isOpen={!!selectedTaskId} 
-          taskId={selectedTaskId} 
-          projectId={projectId}
-          onClose={() => setSelectedTaskId(null)}
-          onTaskUpdated={handleTaskUpdated}
-        />
-      <ChatTester />
+      <TaskDrawer 
+        isOpen={!!selectedTaskId} 
+        taskId={selectedTaskId} 
+        projectId={projectId}
+        onClose={() => setSelectedTaskId(null)}
+        onTaskUpdated={handleTaskUpdated}
+      />
     </div>
   );
 }

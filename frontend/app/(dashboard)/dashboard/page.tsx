@@ -100,9 +100,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Pending Invites Section */}
           {!isLoadingInvites && invites.length > 0 && (
             <div className="bg-[#F9FAFB] border border-[#E4E4E1] rounded-2xl p-6">
@@ -132,7 +132,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* My Active Tasks Widget */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 min-h-[300px]">
             <h2 className="text-sm font-semibold text-[#1B1D1F] mb-5 uppercase tracking-wider">My Active Tasks</h2>
             
@@ -154,14 +153,13 @@ export default function DashboardPage() {
                     className="group flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all duration-200 cursor-pointer bg-white"
                   >
                     <div className="flex items-center gap-4 min-w-0 pr-4">
-                      {/* Interactive-looking check circle icon */}
                       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#F5F5F4] flex items-center justify-center text-[#9A9CA3] group-hover:bg-[#0F7B6C]/10 group-hover:text-[#0F7B6C] transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                           <polyline points="22 4 12 14.01 9 11.01"></polyline>
                         </svg>
                       </div>
-                      
+
                       <div className="min-w-0">
                         <p className="font-semibold text-[#1B1D1F] truncate group-hover:text-[#0F7B6C] transition-colors duration-200">
                           {task.title}
@@ -191,7 +189,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-sm font-semibold text-[#1B1D1F] mb-4 uppercase tracking-wider">Recent Workspaces</h2>
             <div className="space-y-3">
-              <Button variant="secondary" className="w-full justify-start text-[#6B6F76]" onClick={() => router.push('/workspaces')}>
+              <Button variant="secondary" className="w-full justify-start text-[#6B6F76]" onClick={() => router.push('/workspace')}>
                 Browse all workspaces →
               </Button>
             </div>

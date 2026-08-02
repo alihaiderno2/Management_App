@@ -1,18 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Drawer, Box, Typography, IconButton, CircularProgress, Divider } from '@mui/material';
+import { useRouter } from 'next/navigation';
+import { Drawer, Box, Typography, IconButton, CircularProgress, Divider, Button } from '@mui/material';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
-import  {useUiStore}  from '@/store/ui-store';
+import { useUiStore } from '@/store/ui-store';
 import { Avatar } from '../ui/Avatar';
 
 export function UserProfileDrawer() {
+  const router = useRouter();
   const { accessToken } = useAuthStore();
   const { selectedProfileId, closeProfile } = useUiStore();
   
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
 
   useEffect(() => {
     if (selectedProfileId && accessToken) {
@@ -33,6 +36,29 @@ export function UserProfileDrawer() {
       console.error('Failed to fetch user profile', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleMessageClick = async () => {
+    if (!userProfile?.id || !accessToken) return;
+
+    setIsCreatingChat(true);
+    try {
+      const res = await apiClient.post(
+        '/chat/rooms/direct',
+        { targetUserId: userProfile.id },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      const roomId = res.data.id;
+      closeProfile();
+      router.push(`/chat/${roomId}`);
+      
+    } catch (error) {
+      console.error('Failed to start direct message:', error);
+      alert('Could not start conversation.');
+    } finally {
+      setIsCreatingChat(false);
     }
   };
 
@@ -59,7 +85,7 @@ export function UserProfileDrawer() {
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', mb: 4 }}>
-            <Avatar name={userProfile.name} size="lg" />
+            <Avatar name={userProfile.name} size="lg" userId={userProfile.id} />
             <Typography variant="h5" sx={{ color: '#1B1D1F', fontWeight: 600, mt: 2 }}>
               {userProfile.name}
             </Typography>
@@ -69,6 +95,26 @@ export function UserProfileDrawer() {
           </Box>
 
           <Divider sx={{ mb: 4 }} />
+
+          <Button
+            variant="contained"
+            fullWidth
+            disabled={isCreatingChat}
+            onClick={handleMessageClick}
+            sx={{
+              bgcolor: '#0F7B6C',
+              color: 'white',
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 1.5,
+              borderRadius: 2,
+              boxShadow: 'none',
+              '&:hover': { bgcolor: '#0B5C51', boxShadow: 'none' },
+              '&.Mui-disabled': { bgcolor: '#E4E4E1', color: '#9A9CA3' }
+            }}
+          >
+            {isCreatingChat ? 'Opening Chat...' : 'Message'}
+          </Button>
 
         </Box>
       )}
