@@ -7,54 +7,48 @@ export class ProjectService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, workspaceId: string, dto: CreateProjectDto) {
-    if(!await this.isOwner(workspaceId, userId)) {
-      const ownerId = await this.findOwner(workspaceId);
-      if(!ownerId) {
-        throw new NotFoundException('Workspace not found.');
-      }
-      
-      const Project = await this.prisma.project.create({
-        data: {
-          name: dto.name,
-          description: dto.description,
-          workspaceId: workspaceId,
-          createdById: userId,
-          projectMemberShips: {
-            create: [{
-              userId,
-              role: 'MANAGER',
-            },
-            {
-              userId: ownerId,
-              role: 'MANAGER',
-            }
-            ]
-            },
-        },
-        include: {
-          projectMemberShips: true,
-        },
-      });
-      return Project;
+    const isUserOwner = await this.isOwner(workspaceId, userId);
+    const ownerId = await this.findOwner(workspaceId);
+
+    if (!ownerId) {
+      throw new NotFoundException('Workspace not found.');
     }
-    const Project = await this.prisma.project.create({
+
+    const membersData: { userId: string, role: any }[] = [{ userId, role: 'MANAGER' }];
+  
+    if (!isUserOwner) {
+      membersData.push({ userId: ownerId, role: 'MANAGER' });
+    }
+
+    const project = await this.prisma.project.create({
       data: {
         name: dto.name,
         description: dto.description,
         workspaceId: workspaceId,
         createdById: userId,
         projectMemberShips: {
-          create: {
-            userId,
-            role: 'MANAGER',
-          },
+          create: membersData,
         },
       },
       include: {
         projectMemberShips: true,
       },
     });
-    return Project;
+
+    await this.prisma.chatRoom.create({
+      data: {
+        name: `${project.name} General`,
+        type: 'PROJECT',
+        projectId: project.id,
+        participants: {
+          create: project.projectMemberShips.map(member => ({
+            userId: member.userId,
+          })),
+        },
+      }
+    });
+
+    return project;
   }
 
   async findAllByWorkspace(workspaceId: string, userId: string) {
@@ -141,13 +135,28 @@ export class ProjectService {
       throw new ForbiddenException('User must be a member of the workspace to join the project.');
     }
 
-    return await this.prisma.projectMember.create({
+    const projectMember = await this.prisma.projectMember.create({
       data: {
         projectId,
         userId: dto.userId,
         role: dto.role || 'VIEWER',
       },
     });
+
+    const chatRoom = await this.prisma.chatRoom.findFirst({
+      where: { projectId, type: 'PROJECT' },
+    });
+
+    if(chatRoom){
+      await this.prisma.chatRoomParticipant.create({
+        data:{
+          roomId: chatRoom.id,
+          userId: dto.userId,
+        }
+      });
+    }
+
+    return projectMember;
   }
 
   async updateMemberRole(projectId: string, managerId: string, targetUserId: string, dto: UpdateProjectMemberRoleDto) {
@@ -171,11 +180,26 @@ export class ProjectService {
       throw new ForbiddenException('You cannot remove yourself from the project.');
     }
 
-    return await this.prisma.projectMember.delete({
+    const removedMember =  await this.prisma.projectMember.delete({
       where: {
         projectId_userId: { projectId, userId: targetUserId },
       },
     });
+
+    const chatRoom = await this.prisma.chatRoom.findFirst({
+      where: { projectId, type: 'PROJECT' },
+    });
+
+    if(chatRoom){
+      await this.prisma.chatRoomParticipant.deleteMany({
+        where:{
+          roomId: chatRoom.id,
+          userId: targetUserId,
+        }
+      });
+    }
+
+    return removedMember;
   }
 
 

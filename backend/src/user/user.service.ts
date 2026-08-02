@@ -28,38 +28,6 @@ export class UserService {
   }
   // Find or Create user using the google profile information
   async findOrCreateGoogleUser(profile: any) {
-//     Google profile: {
-//   id: '110270282334872722086',
-//   displayName: 'BITF24M004-ALI HAIDER',
-//   name: { familyName: 'HAIDER', givenName: 'BITF24M004-ALI' },
-//   emails: [ { value: 'bitf24m004@pucit.edu.pk', verified: true } ],
-//   photos: [
-//     {
-//       value: 'https://lh3.googleusercontent.com/a/ACg8ocKoGmpBKeByHU3zFWs4k2rz-MWPd8yPE3vxbF-bFswzaP7Y9w=s96-c'
-//     }
-//   ],
-//   provider: 'google',
-//   _raw: '{\n' +
-//     '  "sub": "110270282334872722086",\n' +
-//     '  "name": "BITF24M004-ALI HAIDER",\n' +
-//     '  "given_name": "BITF24M004-ALI",\n' +
-//     '  "family_name": "HAIDER",\n' +
-//     '  "picture": "https://lh3.googleusercontent.com/a/ACg8ocKoGmpBKeByHU3zFWs4k2rz-MWPd8yPE3vxbF-bFswzaP7Y9w\\u003ds96-c",\n' +
-//     '  "email": "bitf24m004@pucit.edu.pk",\n' +
-//     '  "email_verified": true,\n' +
-//     '  "hd": "pucit.edu.pk"\n' +
-//     '}',
-//   _json: {
-//     sub: '110270282334872722086',
-//     name: 'BITF24M004-ALI HAIDER',
-//     given_name: 'BITF24M004-ALI',
-//     family_name: 'HAIDER',
-//     picture: 'https://lh3.googleusercontent.com/a/ACg8ocKoGmpBKeByHU3zFWs4k2rz-MWPd8yPE3vxbF-bFswzaP7Y9w=s96-c',
-//     email: 'bitf24m004@pucit.edu.pk',
-//     email_verified: true,
-//     hd: 'pucit.edu.pk'
-//   }
-// }
     const email = profile.emails[0].value || '';
     // find if user exists with the given email
     let user = await this.prisma.user.findUnique({
@@ -86,56 +54,6 @@ export class UserService {
 
     return user;
   }
-
-//   GitHub profile: {
-//   id: '187115190',
-//   nodeId: 'U_kgDOCycmtg',
-//   displayName: null,
-//   username: 'alihaiderno2',
-//   profileUrl: 'https://github.com/alihaiderno2',
-//   photos: [
-//     { value: 'https://avatars.githubusercontent.com/u/187115190?v=4' }
-//   ],
-//   provider: 'github',
-//   _raw: '{"login":"alihaiderno2","id":187115190,"node_id":"U_kgDOCycmtg","avatar_url":"https://avatars.githubusercontent.com/u/187115190?v=4","gravatar_id":"","url":"https://api.github.com/users/alihaiderno2","html_url":"https://github.com/alihaiderno2","followers_url":"https://api.github.com/users/alihaiderno2/followers","following_url":"https://api.github.com/users/alihaiderno2/following{/other_user}","gists_url":"https://api.github.com/users/alihaiderno2/gists{/gist_id}","starred_url":"https://api.github.com/users/alihaiderno2/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/alihaiderno2/subscriptions","organizations_url":"https://api.github.com/users/alihaiderno2/orgs","repos_url":"https://api.github.com/users/alihaiderno2/repos","events_url":"https://api.github.com/users/alihaiderno2/events{/privacy}","received_events_url":"https://api.github.com/users/alihaiderno2/received_events","type":"User","user_view_type":"public","site_admin":false,"name":null,"company":null,"blog":"","location":null,"email":null,"hireable":null,"bio":null,"twitter_username":null,"notification_email":null,"public_repos":30,"public_gists":0,"followers":2,"following":2,"created_at":"2024-11-02T13:59:41Z","updated_at":"2026-07-09T10:37:23Z"}',
-//   _json: {
-//     login: 'alihaiderno2',
-//     id: 187115190,
-//     node_id: 'U_kgDOCycmtg',
-//     avatar_url: 'https://avatars.githubusercontent.com/u/187115190?v=4',
-//     gravatar_id: '',
-//     url: 'https://api.github.com/users/alihaiderno2',
-//     html_url: 'https://github.com/alihaiderno2',
-//     followers_url: 'https://api.github.com/users/alihaiderno2/followers',
-//     following_url: 'https://api.github.com/users/alihaiderno2/following{/other_user}',
-//     gists_url: 'https://api.github.com/users/alihaiderno2/gists{/gist_id}',
-//     starred_url: 'https://api.github.com/users/alihaiderno2/starred{/owner}{/repo}',
-//     subscriptions_url: 'https://api.github.com/users/alihaiderno2/subscriptions',
-//     organizations_url: 'https://api.github.com/users/alihaiderno2/orgs',
-//     repos_url: 'https://api.github.com/users/alihaiderno2/repos',
-//     events_url: 'https://api.github.com/users/alihaiderno2/events{/privacy}',
-//     received_events_url: 'https://api.github.com/users/alihaiderno2/received_events',
-//     type: 'User',
-//     user_view_type: 'public',
-//     site_admin: false,
-//     name: null,
-//     company: null,
-//     blog: '',
-//     location: null,
-//     email: null,
-//     hireable: null,
-//     bio: null,
-//     twitter_username: null,
-//     notification_email: null,
-//     public_repos: 30,
-//     public_gists: 0,
-//     followers: 2,
-//     following: 2,
-//     created_at: '2024-11-02T13:59:41Z',
-//     updated_at: '2026-07-09T10:37:23Z'
-//   },
-//   emails: [ { value: 'alihaiderno2@gmail.com' } ]
-// }
 
   async findOrCreateGithubUser(profile:any){
     const email = profile.emails[0].value ;
@@ -219,5 +137,24 @@ export class UserService {
     await this.prisma.refreshToken.deleteMany({
       where: { userId },
     });
+  }
+
+  async disableTwoFactor(userId: string){
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFAEnabled: false, twoFASecret: null },
+    });
+    return user;
+  }
+
+  async updateProfile(userId: string, data: { name?: string; showOnlineStatus?: boolean; }) {
+    console.log('Updating profile for userId:', userId, 'with data:', data);
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+    console.log('Updated user:', user);
+    return user;
   }
 }

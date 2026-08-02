@@ -24,7 +24,7 @@ export class SprintController {
   @UseGuards(ProjectMemberGuard)
   @Get(':sprintId')
   async findOne(@Param('projectId') projectId: string, @Param('sprintId') sprintId: string) {
-    return await this.sprintService.findOne(projectId, sprintId); 
+    return await this.sprintService.findOne(projectId, sprintId);
   }
 
   @UseGuards(ProjectManagerGuard)

@@ -33,7 +33,6 @@ export class TaskService {
       },
     });
 
-
     return task;
   }
 
@@ -57,9 +56,9 @@ export class TaskService {
     });
   }
 
-  async findOne(taskId: string) {
-    const task = await this.prisma.task.findUnique({
-      where: { id: taskId },
+  async findOne(projectId: string, taskId: string) {
+    const task = await this.prisma.task.findFirst({
+      where: { id: taskId, projectId },
       include: {
         assignee: { select: { id: true, name: true, email: true, profileImage: true } },
         createdBy: { select: { id: true, name: true } },
@@ -67,21 +66,33 @@ export class TaskService {
       },
     });
 
-    if (!task) throw new NotFoundException('Task not found');
+    if (!task) throw new NotFoundException('Task not found in this project');
     return task;
   }
 
-  async update(taskId: string, dto: UpdateTaskDto) {
+  async update(projectId: string, taskId: string, dto: UpdateTaskDto) {
+    const existingTask = await this.prisma.task.findFirst({
+      where: { id: taskId, projectId },
+    });
+    
+    if (!existingTask) throw new NotFoundException('Task not found in this project');
+
     return await this.prisma.task.update({
       where: { id: taskId },
-      data: dto,
+      data: dto, 
       include: {
         assignee: { select: { id: true, name: true, profileImage: true } },
       },
     });
   }
 
-  async move(taskId: string, dto: MoveTaskDto) {
+  async move(projectId: string, taskId: string, dto: MoveTaskDto) {
+    const existingTask = await this.prisma.task.findFirst({
+      where: { id: taskId, projectId },
+    });
+    
+    if (!existingTask) throw new NotFoundException('Task not found in this project');
+
     return await this.prisma.task.update({
       where: { id: taskId },
       data: {
@@ -92,9 +103,37 @@ export class TaskService {
     });
   }
 
-  async remove(taskId: string) {
+  async remove(projectId: string, taskId: string) {
+    const existingTask = await this.prisma.task.findFirst({
+      where: { id: taskId, projectId },
+    });
+    
+    if (!existingTask) throw new NotFoundException('Task not found in this project');
+
     return await this.prisma.task.delete({
       where: { id: taskId },
     });
   }
+
+  async getMyActiveTasks(userId: string) {
+        const tasks = await this.prisma.task.findMany({
+            where: {
+                assigneeId: userId,
+                status: {
+                    not: 'DONE'
+                }
+            },
+            take: 5,
+            orderBy: {
+                createdAt: 'desc'
+            },
+            include: {
+                project: {
+                    select: { name: true }
+                }
+            }
+        });
+
+        return tasks;
+    }
 }

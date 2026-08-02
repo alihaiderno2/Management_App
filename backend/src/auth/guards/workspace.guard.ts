@@ -13,7 +13,7 @@ export class WorkspaceMemberGuard implements CanActivate {
         const workspaceId = req.params.id;
 
         const membership = await this.workspaceService.getMembership(userId, workspaceId);
-        
+
         if(!membership){
             return false;
         }

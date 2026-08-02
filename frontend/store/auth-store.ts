@@ -5,6 +5,7 @@ interface User {
     name: string;
     email: string;
     twoFAEnabled: boolean;
+    showOnlineStatus: boolean;
 }
 
 interface AuthState {

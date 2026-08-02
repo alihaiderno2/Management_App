@@ -9,8 +9,15 @@ import { Input } from '../../../componenets/ui/Input';
 import { Modal } from '../../../componenets/ui/Modal';
 import { Avatar } from '../../../componenets/ui/Avatar';
 import { Badge } from '../../../componenets/ui/Badge';
+import DeleteIcon  from '@mui/icons-material/Delete';
 
 interface Project {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface Workspace {
   id: string;
   name: string;
   description?: string;
@@ -22,6 +29,15 @@ interface Member {
   email: string;
   role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'USER';
   disabled: boolean;
+}
+
+interface Invitee {
+  id: string;
+  email: string;
+  role: 'MEMBER' | 'ADMIN';
+  createdAt: string;
+  invitedById: string;
+  acceptedAt : string | null;
 }
 
 const RANK = { OWNER: 3, ADMIN: 2, MEMBER: 1, USER: 1 };
@@ -44,6 +60,8 @@ export default function WorkspaceOverviewPage() {
   const [createProjectError, setCreateProjectError] = useState('');
   const [isCreatingProject, setIsCreatingProject] = useState(false);
 
+  const [workspace, setWorkspace] = useState<Workspace >({ id: '', name: '', description: '' });
+
   const [members, setMembers] = useState<Member[]>([]);
   const [myMembership, setMyMembership] = useState<Member | null>(null);
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
@@ -53,6 +71,13 @@ export default function WorkspaceOverviewPage() {
   const [inviteRole, setInviteRole] = useState<'MEMBER' | 'ADMIN'>('MEMBER');
   const [inviteError, setInviteError] = useState('');
   const [isInviting, setIsInviting] = useState(false);
+
+  const [invitees, setInvitees] = useState<Invitee[]>([]);
+
+
+  const [settingsView, setSettingsView] = useState<'general' | 'members'>('general');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const myRank = myMembership ? RANK[myMembership.role] : 0;
   const canManage = (target: Member) => myRank > RANK[target.role];
@@ -65,14 +90,18 @@ export default function WorkspaceOverviewPage() {
     setLoadError('');
     try {
       const headers = { Authorization: `Bearer ${accessToken}` };
-      const [projectsRes, membersRes] = await Promise.all([
+      const [workspaceRes,projectsRes, membersRes, inviteesRes] = await Promise.all([
+        apiClient.get(`/workspace/${workspaceId}`, { headers }),
         apiClient.get(`/workspace/${workspaceId}/project`, { headers }),
         apiClient.get(`/workspace/${workspaceId}/members`, { headers }),
+        apiClient.get(`/workspace/${workspaceId}/invites`, { headers })
       ]);
       
+      setWorkspace(workspaceRes.data);
       setProjects(projectsRes.data);
       setMembers(membersRes.data.members ?? membersRes.data);
       setMyMembership(membersRes.data.members?.find((m: Member) => m.email === user?.email) ?? null);
+      setInvitees(inviteesRes.data);
     } catch (err: any) {
       setLoadError(err?.response?.data?.message ?? 'Could not load workspace data.');
     } finally {
@@ -104,13 +133,28 @@ export default function WorkspaceOverviewPage() {
       setProjectName('');
       setProjectDesc('');
       setIsProjectModalOpen(false);
-      fetchData(); 
+      fetchData();
     } catch (err: any) {
       setCreateProjectError(err?.response?.data?.message ?? 'Could not create project.');
     } finally {
       setIsCreatingProject(false);
     }
   };
+
+  const handleDeleteWorkspace = async () => {
+    try{
+      setIsDeleting(true);
+      await apiClient.delete(`/workspace/${workspaceId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      router.push('/workspace');
+    }catch(err: any){
+      setDeleteError(err?.response?.data?.message ?? 'Could not delete workspace.');
+    } finally{
+      setIsDeleting(false);
+    }
+  }
 
   const handleInvite = async (e: FormEvent) => {
     e.preventDefault();
@@ -137,6 +181,19 @@ export default function WorkspaceOverviewPage() {
       setIsInviting(false);
     }
   };
+
+  const handleDeleteInvite = async (invitee: Invitee) => {
+    const confirmed = window.confirm(`Cancel invite for ${invitee.email}?`);
+    if (!confirmed) return;
+    try{
+      await apiClient.delete(`/workspace/${workspaceId}/invites/${invitee.id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      fetchData();
+    }catch(err: any){
+      alert(err?.response?.data?.message ?? 'Could not cancel invite.');
+    }
+  }
 
   const handlePromote = async (member: Member) => {
     try {
@@ -169,7 +226,6 @@ export default function WorkspaceOverviewPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="mb-6">
-        <p className="text-sm text-[#6B6F76] mb-1">Workspace</p>
         <h1 className="text-2xl font-semibold text-[#1B1D1F]">Workspace Overview</h1>
       </div>
 
@@ -244,7 +300,8 @@ export default function WorkspaceOverviewPage() {
 
           {/* MEMBERS TAB */}
           {activeTab === 'members' && (
-            <div>
+            <div className="space-y-4">
+
               <div className="flex justify-end mb-4">
                 {myMembership?.role !== 'MEMBER' && (
                   <Button variant="primary" className="w-auto px-4" onClick={() => setIsInviteOpen(true)}>
@@ -252,6 +309,35 @@ export default function WorkspaceOverviewPage() {
                   </Button>
                 )}
               </div>
+
+              {invitees.length > 0 && (
+              <div className="rounded-2xl" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="px-6 py-4 border-b border-[#E4E4E1]">
+                  <h2 className="text-sm font-medium text-[#1B1D1F]">Invited Members {invitees.length}</h2>
+                </div>
+
+                <div>
+                  {invitees.map((invitee, i) => (
+                    <div
+                      key={invitee.id}
+                      className={`flex items-center justify-between px-6 py-3 ${i !== members.length - 1 ? 'border-b border-[#F0F0EE]' : ''}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar name={invitee.email} size="sm" userId={invitee.id} />
+                        <div>
+                          <p className="text-sm text-[#9A9CA3]">{invitee.email}</p>
+                        </div>
+                      </div>
+                      <div className= "flex items-center gap-3">
+                      {invitee.acceptedAt && <Badge variant="accent">Accepted</Badge>}
+                      <Badge variant="accent">Invited by you</Badge>
+                      <Badge variant={invitee.role === 'ADMIN' ? 'default' : 'default'}>{invitee.role}</Badge>
+                      {(myMembership?.role !== "USER") &&  <DeleteIcon onClick={() => handleDeleteInvite(invitee)} sx={{ color: "#ef4444", cursor: "pointer", "&:hover": { color: "#b91c1c",  },  }} />}
+                      </div>
+                    </div>)
+                  )}
+                </div>
+              </div>)}
 
               <div className="rounded-2xl" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="px-6 py-4 border-b border-[#E4E4E1]">
@@ -318,18 +404,56 @@ export default function WorkspaceOverviewPage() {
                   ))}
                 </div>
               </div>
+
             </div>
           )}
 
           {/* SETTINGS TAB */}
           {activeTab === 'settings' && (
-            <div className="max-w-xl bg-[#FFFFFF] rounded-2xl border border-[#E4E4E1] p-6">
-              <h2 className="text-lg font-semibold text-[#1B1D1F] mb-4">Workspace Settings</h2>
-              <p className="text-sm text-[#6B6F76]">
-                Workspace renaming and deletion options will go here.
-              </p>
+          <div className="flex gap-8">
+            <div className="w-48 shrink-0 flex flex-col space-y-1">
+              <button
+                onClick={() => setSettingsView('general')}
+                className={`text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  settingsView === 'general' ? 'bg-[#E1F5EE] text-[#0F7B6C]' : 'text-[#6B6F76] hover:bg-[#F5F5F4] hover:text-[#1B1D1F]'
+                }`}
+              >
+                General
+              </button>
             </div>
-          )}
+
+            <div className="flex-1 max-w-2xl bg-[#FFFFFF] rounded-2xl border border-[#E4E4E1] p-6">
+
+              {settingsView === 'general' && (
+                <div>
+                  <h2 className="text-lg font-semibold text-[#1B1D1F] mb-4">Workspace Details</h2>
+                  <div className="mb-8">
+                    <p className="text-sm font-bold text-[#1B1D1F] mb-1">Description</p>
+                    <p className="text-sm text-[#6B6F76]">{workspace.description || 'No description provided.'}</p>
+                  </div>
+
+                  <hr className="border-[#E4E4E1] my-6" />
+
+                  <div>
+                    <h3 className="text-md font-semibold text-[#C1443A] mb-2">Danger Zone</h3>
+                    <p className="text-sm text-[#6B6F76] mb-4">
+                      Deleting a project will permanently remove all associated sprints and tasks.
+                    </p>
+                    {deleteError && <p className="text-sm text-[#C1443A] mb-2">{deleteError}</p>}
+                    <Button 
+                      variant="primary" 
+                      onClick={handleDeleteWorkspace}
+                      disabled={isDeleting}
+                      className="bg-[#C1443A]! hover:bg-[#A33931]! border-none! w-auto px-4"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete Workspace'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         </div>
       )}

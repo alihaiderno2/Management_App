@@ -50,4 +50,13 @@ export class TwoFactorService {
         const result = await verify({secret, token: code});
         return result;
     }
+
+    async disableTwoFactor(userId: string){
+        const user = await this.userService.findById(userId);
+        if(!user?.twoFASecret){
+            return false;
+        }
+
+        await this.userService.disableTwoFactor(userId);
+    }
 }

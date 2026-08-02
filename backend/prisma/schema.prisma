@@ -37,6 +37,12 @@ enum ProjectRole {
   VIEWER
 }
 
+enum MessageType {
+  TEXT
+  FILE
+  SYSTEM
+}
+
 enum ChatRoomType {
   PROJECT
   TEAM
@@ -64,6 +70,7 @@ model User {
   googleId       String?         @unique
   githubId       String?         @unique
   emailVerified Boolean @default(false)
+  showOnlineStatus Boolean @default(true)
 
   taskComments   TaskComment[]
   messages       Message[]
@@ -157,7 +164,7 @@ model Project {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   createdById        String
-  workspace          Workspace      @relation(fields: [workspaceId], references: [id])
+  workspace          Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   projectMemberShips ProjectMember[]
   sprints            Sprint[]
   tasks              Task[]
@@ -172,7 +179,7 @@ model ProjectMember {
   role      ProjectRole     @default(VIEWER)
   joinedAt  DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
 
   @@unique([projectId, userId])
@@ -188,7 +195,7 @@ model Sprint {
   createdAt DateTime @default(now())
   status   SprintStatus @default(PENDING)
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks   Task[]
 }
 
@@ -209,8 +216,8 @@ model Task {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  sprint       Sprint?       @relation(fields: [sprintId], references: [id])
-  project      Project       @relation(fields: [projectId], references: [id])
+  sprint       Sprint?       @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdBy    User          @relation("TaskCreatedBy", fields: [createdByID], references: [id])
   assignee     User?         @relation("TaskAssignee", fields: [assigneeId], references: [id])
   taskComments TaskComment[]
@@ -229,29 +236,23 @@ model TaskComment {
   author User @relation(fields: [authorId], references: [id])
 }
 
-model chatRoom {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-
-  messages Message[]
-}
-
 model ChatRoom {
   id          String       @id @default(uuid())
-  name        String
+  name        String?
   type        ChatRoomType
+
   projectId   String?
   workspaceId String?
-  directKey   String?
+  directKey   String?      @unique
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  project   Project?   @relation(fields: [projectId], references: [id])
-  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   participants ChatRoomParticipant[]
-  messages  Message[]
+  messages     Message[]
 
   @@unique([projectId, type])
   @@unique([workspaceId, type])
@@ -264,24 +265,32 @@ model ChatRoomParticipant {
   lastReadAt DateTime?
   joinedAt   DateTime  @default(now())
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chatRoom ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatRoom   ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  roomId    String
-  authorId  String
-  body      String
-  createdAt DateTime @default(now())
+  id          String      @id @default(uuid())
+  roomId      String
+  authorId    String
+  body        String
+  type        MessageType @default(TEXT)
 
-  room        ChatRoom     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  author      User         @relation(fields: [authorId], references: [id])
+  replyToId   String?
+
+  createdAt   DateTime    @default(now())
+  editedAt    DateTime?
+  deletedAt   DateTime?
+
+  room        ChatRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorId], references: [id])
+
+  replyTo     Message?    @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     Message[]   @relation("MessageReplies")
+
   attachments Attachment[]
-  chatRoom    chatRoom?    @relation(fields: [chatRoomId], references: [id])
-  chatRoomId  String?
 }
 
 // Attachments
