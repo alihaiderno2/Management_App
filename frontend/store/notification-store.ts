@@ -1,3 +1,4 @@
+// store/notification-store.ts
 import { create } from 'zustand';
 
 export interface AppNotification {
@@ -18,9 +19,10 @@ interface NotificationState {
   setNotifications: (notifications: AppNotification[]) => void;
   addNotification: (notification: AppNotification) => void;
   markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
 }
 
-export const useNotificationStore = create((set) => ({
+export const useNotificationStore = create<NotificationState>((set) => ({
   notifications: [],
   unreadCount: 0,
   
@@ -39,5 +41,10 @@ export const useNotificationStore = create((set) => ({
       n.id === id ? { ...n, isRead: true } : n
     ),
     unreadCount: Math.max(0, state.unreadCount - 1)
+  })),
+
+  markAllAsRead: () => set((state) => ({
+    notifications: state.notifications.map(n => ({ ...n, isRead: true })),
+    unreadCount: 0
   })),
 }));

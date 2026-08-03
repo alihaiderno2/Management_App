@@ -17,24 +17,23 @@ export class NotificationProcessor extends WorkerHost {
   }
 
   async process(job: Job): Promise<any> {
-    this.logger.log(`Processing notification for user: ${job.data.userId}`);
-    
     try {
         const notification = await this.prisma.notification.create({
         data: {
           userId: job.data.userId,
           actorId: job.data.actorId,
           type: job.data.type,
-          way: job.data.way || 'APP',
           title: job.data.title,
           body: job.data.body,
           link: job.data.link,
+          way: job.data.way || 'APP',
           payload: job.data.payload || {},
           status: 'DELIVERED', 
           sentAt: new Date(),
         },
         include: { 
-          actor: { select: { name: true, profileImage: true } } 
+          actor: { select: { name: true, profileImage: true } },
+          user: { select: { name: true, profileImage: true } }
         }
       });
 
@@ -47,7 +46,6 @@ export class NotificationProcessor extends WorkerHost {
 
       return { success: true, notificationId: notification.id };
     } catch (error: any) {
-      this.logger.error(`Failed to process notification: ${error.message}`);
       throw error;
     }
   }

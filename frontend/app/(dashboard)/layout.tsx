@@ -12,6 +12,7 @@ import { UserProfileDrawer } from "@/app/componenets/profile/UserProfileDrawer";
 import { useChatStore } from "@/store/chat-store";
 import { NotificationListener } from "@/app/componenets/notification/NotificationListener";
 import { Toaster } from "sonner";
+import { NotificationBell } from "@/app/componenets/notification/notificationBell";
 
 export default function DashboardLayout({
   children,
@@ -130,7 +131,7 @@ export default function DashboardLayout({
             Menu
           </Typography>
         </Box>
-        <Toaster position="bottom-right" richColors />
+        <Toaster position="bottom-right" />
 
         <Box sx={{ flex: 1, p: { xs: 2, md: 5 } }}>{children}</Box>
       </Box>

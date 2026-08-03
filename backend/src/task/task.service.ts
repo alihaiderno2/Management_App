@@ -33,16 +33,19 @@ export class TaskService {
       },
       include: {
         assignee: { select: { id: true, name: true, profileImage: true } },
+        project: { select: { name: true, workspaceId: true } },
       },
     });
 
     const userID = dto.assigneeId || "non";
     await this.notificationService.dispatch({
-      userId: userID,
+      userId: dto.assigneeId || "non",
       actorId: createdByID,
       type: 'TASK_ASSIGNED',
       title: dto.title,
-      body: dto.description || "non",
+      body: dto.description || 'You have been assigned a new task.',
+      link : `workspace/${task.project.workspaceId}/project/${projectId}`,
+      payload: { taskId: task.id, projectId },
     });
     return task;
   }
@@ -53,7 +56,7 @@ export class TaskService {
     if (filters.sprintId !== undefined) {
       whereClause.sprintId = filters.sprintId === 'null' ? null : filters.sprintId;
     }
-    
+
     if (filters.assigneeId) whereClause.assigneeId = filters.assigneeId;
     if (filters.status) whereClause.status = filters.status;
 
@@ -88,13 +91,26 @@ export class TaskService {
     
     if (!existingTask) throw new NotFoundException('Task not found in this project');
 
-    return await this.prisma.task.update({
+    const task =  await this.prisma.task.update({
       where: { id: taskId },
       data: dto, 
       include: {
         assignee: { select: { id: true, name: true, profileImage: true } },
+        project: { select: { name: true , workspaceId: true} },
       },
     });
+
+    await this.notificationService.dispatch({
+      userId: task.assigneeId || "non",
+      actorId: existingTask.createdByID,
+      type: 'TASK_UPDATED',
+      title: task.title,
+      body: task.description || 'A task assigned to you has been updated.',
+      link: `workspace/${task.project.workspaceId}/project/${projectId}`,
+      payload: { taskId: task.id, projectId },
+    });
+
+    return task;
   }
 
   async move(projectId: string, taskId: string, dto: MoveTaskDto) {
@@ -104,14 +120,52 @@ export class TaskService {
     
     if (!existingTask) throw new NotFoundException('Task not found in this project');
 
-    return await this.prisma.task.update({
+    const task =  await this.prisma.task.update({
       where: { id: taskId },
       data: {
         status: dto.status,
         order: dto.order,
         sprintId: dto.sprintId !== undefined ? dto.sprintId : undefined,
       },
+      include: {
+        assignee: { select: { id: true, name: true, profileImage: true } },
+        project: { select: { name: true , workspaceId: true} },
+      },
     });
+
+    await this.notificationService.dispatch({
+      userId: task.assigneeId || "non",
+      actorId: existingTask.createdByID,
+      type: 'TASK_UPDATED',
+      title: task.title,
+      body: `A task assigned to you has been moved to ${dto.status}.`,
+      link: `workspace/${task.project.workspaceId}/project/${projectId}`,
+      payload: { taskId: task.id, projectId },
+    });
+
+    if(task.assigneeId) {
+      await this.notificationService.dispatch({
+        userId: task.assigneeId || "non",
+        actorId: existingTask.createdByID,
+        type: 'TASK_UPDATED',
+        title: task.title,
+        body: `A task assigned to you has been moved to ${dto.status}.`,
+        link: `workspace/${task.project.workspaceId}/project/${projectId}`,
+        payload: { taskId: task.id, projectId },
+      });
+    }
+
+    await this.notificationService.dispatch({
+      userId: existingTask.createdByID,
+      actorId: existingTask.createdByID,
+      type: 'TASK_UPDATED',
+      title: task.title,
+      body: `A task you created has been moved to ${dto.status}.`,
+      link : `workspace/${task.project.workspaceId}/project/${projectId}`,
+      payload: { taskId: task.id, projectId },
+    });
+    return task;
+
   }
 
   async remove(projectId: string, taskId: string) {

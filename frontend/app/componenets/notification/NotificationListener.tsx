@@ -2,14 +2,17 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { useChatStore } from "@/store/chat-store";
 import { useNotificationStore } from "@/store/notification-store";
+import { useAuthStore } from "@/store/auth-store";
+import { apiClient } from "@/lib/api-client";
 
 export function NotificationListener() {
   const { socket } = useChatStore();
-  const addNotification = useNotificationStore(
-    (state) => state.addNotification,
-  );
+  const { addNotification, setNotifications } = useNotificationStore();
+  const { accessToken } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     if (!socket) return;
@@ -22,7 +25,9 @@ export function NotificationListener() {
         action: notification.link
           ? {
               label: "View",
-              onClick: () => (window.location.href = notification.link),
+              onClick: () => {
+                router.replace(notification.link);
+              },
             }
           : undefined,
       });
@@ -34,6 +39,22 @@ export function NotificationListener() {
       socket.off("new-notification", handleNewNotification);
     };
   }, [socket, addNotification]);
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const { data } = await apiClient.get('/notifications',
+          {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          }
+        );
+        setNotifications(data);
+      } catch (error) {
+        console.error("Failed to fetch notifications", error);
+      }
+    };
+
+    fetchHistory();
+  }, [setNotifications]);
 
   return null;
 }

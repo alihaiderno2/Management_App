@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/app/componenets/ui/Button';
+import { NotificationBell } from '@/app/componenets/notification/notificationBell';
 
 interface PendingInvite {
   workspaceId: string;
@@ -90,13 +91,16 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#1B1D1F] mb-1">
+      <div className="mb-8 flex justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-[#1B1D1F] mb-1">
           Good afternoon{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
         </h1>
         <p className="text-sm text-[#6B6F76]">
           Here is what's happening across your workspaces today.
         </p>
+        </div>
+        <NotificationBell />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

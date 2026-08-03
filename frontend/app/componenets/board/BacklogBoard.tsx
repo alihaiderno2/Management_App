@@ -1,38 +1,54 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { 
-  DndContext, DragOverlay, closestCorners, KeyboardSensor, 
-  PointerSensor, useSensor, useSensors, useDraggable, useDroppable, 
-  DragEndEvent, DragStartEvent, MouseSensor,
+import React, { useState, useEffect } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  DragEndEvent,
+  DragStartEvent,
+  MouseSensor,
   TouchSensor,
-} from '@dnd-kit/core';
-import { Modal } from '../ui/Modal';
-import { apiClient } from '@/lib/api-client';
-import { useAuthStore } from '@/store/auth-store';
-import { TaskCard } from './TaskCard';
-import { Task } from './KanbanBoard';
+} from "@dnd-kit/core";
+import { Modal } from "../ui/Modal";
+import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/store/auth-store";
+import { TaskCard } from "./TaskCard";
+import { Task } from "./KanbanBoard";
 
 export interface Sprint {
   id: string;
   name: string;
   startDate: string;
   endDate: string;
-  status: 'PENDING' | 'ACTIVE' | 'COMPLETED';
+  status: "PENDING" | "ACTIVE" | "COMPLETED";
 }
 
 interface BacklogBoardProps {
   projectId: string;
   tasks: Task[];
   sprints: Sprint[];
-  userRole: 'VIEWER' | 'MANAGER' | 'CONTRIBUTOR';
+  userRole: "VIEWER" | "MANAGER" | "CONTRIBUTOR";
   onDataChanged: () => void;
   onTaskClick: (taskId: string) => void;
   onTaskUpdated: (taskId: string, updates: Partial<Task>) => void;
 }
 
-
-function DraggableTask({ task, onClick, disabled }: { task: Task; onClick: () => void; disabled: boolean }) {
+function DraggableTask({
+  task,
+  onClick,
+  disabled,
+}: {
+  task: Task;
+  onClick: () => void;
+  disabled: boolean;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     data: { task },
@@ -40,11 +56,14 @@ function DraggableTask({ task, onClick, disabled }: { task: Task; onClick: () =>
   });
 
   return (
-    <div 
-      ref={setNodeRef} 
-      {...listeners} 
-      {...attributes} 
-      style={{ opacity: isDragging ? 0.4 : 1, cursor: disabled ? 'default' : 'grab' }}
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{
+        opacity: isDragging ? 0.4 : 1,
+        cursor: disabled ? "default" : "grab",
+      }}
       className="mb-2"
     >
       <TaskCard
@@ -61,26 +80,39 @@ function DraggableTask({ task, onClick, disabled }: { task: Task; onClick: () =>
   );
 }
 
-function DroppableZone({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
+function DroppableZone({
+  id,
+  children,
+  className,
+}: {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   const { isOver, setNodeRef } = useDroppable({ id });
-  
+
   return (
-    <div 
-      ref={setNodeRef} 
-      className={`${className} transition-colors ${isOver ? 'bg-[#EAF5F3] border-[#0F7B6C]' : ''}`}
+    <div
+      ref={setNodeRef}
+      className={`${className} transition-colors ${isOver ? "bg-[#EAF5F3] border-[#0F7B6C]" : ""}`}
     >
       {children}
     </div>
   );
 }
 
-
-export function BacklogBoard({ 
-  projectId, tasks, sprints, userRole, onDataChanged, onTaskClick, onTaskUpdated
+export function BacklogBoard({
+  projectId,
+  tasks,
+  sprints,
+  userRole,
+  onDataChanged,
+  onTaskClick,
+  onTaskUpdated,
 }: BacklogBoardProps) {
   const { accessToken } = useAuthStore();
-  const [formError, setFormError] = useState<string>('');
-  const today = new Date().toISOString().split('T')[0];
+  const [formError, setFormError] = useState<string>("");
+  const today = new Date().toISOString().split("T")[0];
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -92,33 +124,33 @@ export function BacklogBoard({
   }, [tasks]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [sprintName, setSprintName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [sprintName, setSprintName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, { 
-      activationConstraint: { distance: 5 } 
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 5 },
     }),
-    useSensor(TouchSensor, { 
-      activationConstraint: { delay: 250, tolerance: 5 } 
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
-  const canEdit = userRole === 'MANAGER' || userRole === 'CONTRIBUTOR';
+  const canEdit = userRole === "MANAGER" || userRole === "CONTRIBUTOR";
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const task = localTasks.find(t => t.id === active.id);
+    const task = localTasks.find((t) => t.id === active.id);
     if (task) setActiveTask(task);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveTask(null);
     const { active, over } = event;
-    
+
     console.log("1. Drag Ended. Active ID:", active?.id, "Over ID:", over?.id);
 
     if (!over) {
@@ -127,10 +159,10 @@ export function BacklogBoard({
     }
 
     const taskId = active.id as string;
-    const targetSprintId = over.id === 'backlog' ? null : (over.id as string);
+    const targetSprintId = over.id === "backlog" ? null : (over.id as string);
 
-    const draggedTask = localTasks.find(t => t.id === taskId) as any;
-    
+    const draggedTask = localTasks.find((t) => t.id === taskId) as any;
+
     if (!draggedTask) {
       return;
     }
@@ -141,9 +173,9 @@ export function BacklogBoard({
     if (currentSprintId === newSprintId) {
       return;
     }
-    setLocalTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, sprintId: newSprintId } : t
-    ));
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, sprintId: newSprintId } : t)),
+    );
 
     onTaskUpdated(taskId, { sprintId: newSprintId });
 
@@ -151,25 +183,26 @@ export function BacklogBoard({
 
     try {
       await apiClient.patch(
-        `/project/${projectId}/task/${taskId}`, 
+        `/project/${projectId}/task/${taskId}`,
         { sprintId: newSprintId },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      )} catch (error) {
-      console.error('6. API Request FAILED:', error);
-      setLocalTasks(tasks); 
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+    } catch (error) {
+      console.error("6. API Request FAILED:", error);
+      setLocalTasks(tasks);
     }
   };
 
   const handleCreateSprint = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError(''); 
+    setFormError("");
 
     if (startDate < today) {
-      setFormError('Start date cannot be in the past.');
+      setFormError("Start date cannot be in the past.");
       return;
     }
     if (endDate < startDate) {
-      setFormError('End date cannot be before the start date.');
+      setFormError("End date cannot be before the start date.");
       return;
     }
 
@@ -178,33 +211,40 @@ export function BacklogBoard({
       await apiClient.post(
         `/project/${projectId}/sprint`,
         { name: sprintName, startDate, endDate },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
 
       setIsModalOpen(false);
-      setSprintName('');
-      setStartDate('');
-      setEndDate('');
+      setSprintName("");
+      setStartDate("");
+      setEndDate("");
       onDataChanged();
     } catch (error: any) {
-      console.error('Failed to create sprint', error);
-      setFormError(error?.response?.data?.message ?? 'Failed to create sprint.');
+      console.error("Failed to create sprint", error);
+      setFormError(
+        error?.response?.data?.message ?? "Failed to create sprint.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUpdateSprintStatus = async (sprintId: string, newStatus: 'ACTIVE' | 'COMPLETED') => {
+  const handleUpdateSprintStatus = async (
+    sprintId: string,
+    newStatus: "ACTIVE" | "COMPLETED",
+  ) => {
     setUpdatingSprintId(sprintId);
     try {
       await apiClient.patch(
         `/project/${projectId}/sprint/${sprintId}`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
       onDataChanged();
     } catch (error: any) {
-      alert(error?.response?.data?.message ?? 'Failed to update sprint status.');
+      alert(
+        error?.response?.data?.message ?? "Failed to update sprint status.",
+      );
     } finally {
       setUpdatingSprintId(null);
       setOpenMenuFor(null);
@@ -212,18 +252,19 @@ export function BacklogBoard({
   };
 
   const handleDeleteSprint = async (sprintId: string, sprintName: string) => {
-    const confirmed = window.confirm(`Are you sure you want to delete "${sprintName}"? Any tasks inside will be moved back to the backlog.`);
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${sprintName}"? Any tasks inside will be moved back to the backlog.`,
+    );
     if (!confirmed) return;
-    
+
     setUpdatingSprintId(sprintId);
     try {
-      await apiClient.delete(
-        `/project/${projectId}/sprint/${sprintId}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      await apiClient.delete(`/project/${projectId}/sprint/${sprintId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       onDataChanged();
     } catch (error: any) {
-      alert(error?.response?.data?.message ?? 'Failed to delete sprint.');
+      alert(error?.response?.data?.message ?? "Failed to delete sprint.");
     } finally {
       setUpdatingSprintId(null);
       setOpenMenuFor(null);
@@ -231,20 +272,19 @@ export function BacklogBoard({
   };
 
   return (
-    <DndContext 
-      sensors={sensors} 
-      collisionDetection={closestCorners} 
-      onDragStart={handleDragStart} 
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10 items-start">
-
-{/* Left side */}
+        {/* Left side */}
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center h-10">
             <h2 className="text-xl font-bold text-[#1B1D1F]">Sprints</h2>
-            {userRole === 'MANAGER' && (
-              <button 
+            {userRole === "MANAGER" && (
+              <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-[#0F7B6C] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#0B5C51] transition-colors"
               >
@@ -258,29 +298,41 @@ export function BacklogBoard({
               No sprints created yet.
             </div>
           ) : (
-            sprints.map(sprint => {
-              const sprintTasks = localTasks.filter(t => (t as any).sprintId === sprint.id);
-              
+            sprints.map((sprint) => {
+              const sprintTasks = localTasks.filter(
+                (t) => (t as any).sprintId === sprint.id,
+              );
+
               return (
-                <div key={sprint.id} className="bg-[#F5F5F4] rounded-2xl p-4 border border-[#E4E4E1] flex flex-col gap-3">
+                <div
+                  key={sprint.id}
+                  className="bg-[#F5F5F4] rounded-2xl p-4 border border-[#E4E4E1] flex flex-col gap-3"
+                >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="font-bold text-[#1B1D1F]">{sprint.name}</h3>
+                      <h3 className="font-bold text-[#1B1D1F]">
+                        {sprint.name}
+                      </h3>
                       <p className="text-xs text-[#6B6F76] mt-0.5">
-                        {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                        {new Date(sprint.startDate).toLocaleDateString()} -{" "}
+                        {new Date(sprint.endDate).toLocaleDateString()}
                       </p>
                     </div>
-                    
+
                     <div className="flex items-center gap-3 relative">
-                      <span className={`text-[10px] uppercase font-mono tracking-wide px-2 py-1 rounded-md border text-[#1B1D1F] ${sprint.status === 'ACTIVE' ? 'bg-[#EAF5F3] border-[#0F7B6C]' : 'bg-white border-[#E4E4E1]'}`}>
+                      <span
+                        className={`text-[10px] uppercase font-mono tracking-wide px-2 py-1 rounded-md border text-[#1B1D1F] ${sprint.status === "ACTIVE" ? "bg-[#EAF5F3] border-[#0F7B6C]" : "bg-white border-[#E4E4E1]"}`}
+                      >
                         {sprint.status}
                       </span>
 
-                      {userRole === 'MANAGER' && (
+                      {userRole === "MANAGER" && (
                         <>
-                          {sprint.status === 'PENDING' && (
-                            <button 
-                              onClick={() => handleUpdateSprintStatus(sprint.id, 'ACTIVE')}
+                          {sprint.status === "PENDING" && (
+                            <button
+                              onClick={() =>
+                                handleUpdateSprintStatus(sprint.id, "ACTIVE")
+                              }
                               disabled={updatingSprintId === sprint.id}
                               className="text-xs text-[#1B1D1F] bg-white border border-[#E4E4E1] hover:border-[#0F7B6C] hover:text-[#0F7B6C] px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
                             >
@@ -288,9 +340,11 @@ export function BacklogBoard({
                             </button>
                           )}
 
-                          {sprint.status === 'ACTIVE' && (
-                            <button 
-                              onClick={() => handleUpdateSprintStatus(sprint.id, 'COMPLETED')}
+                          {sprint.status === "ACTIVE" && (
+                            <button
+                              onClick={() =>
+                                handleUpdateSprintStatus(sprint.id, "COMPLETED")
+                              }
                               disabled={updatingSprintId === sprint.id}
                               className="text-xs bg-[#0F7B6C] text-white hover:bg-[#0B5C51] px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
                             >
@@ -299,16 +353,22 @@ export function BacklogBoard({
                           )}
 
                           <button
-                            onClick={() => setOpenMenuFor(openMenuFor === sprint.id ? null : sprint.id)}
+                            onClick={() =>
+                              setOpenMenuFor(
+                                openMenuFor === sprint.id ? null : sprint.id,
+                              )
+                            }
                             className="text-[#9A9CA3] hover:text-[#1B1D1F] px-1 text-lg leading-none"
                           >
                             ⋯
                           </button>
-                          
+
                           {openMenuFor === sprint.id && (
                             <div className="absolute right-0 top-8 z-10 w-44 rounded-lg border border-[#E4E4E1] shadow-lg bg-[#FFFFFF] overflow-hidden">
                               <button
-                                onClick={() => handleDeleteSprint(sprint.id, sprint.name)}
+                                onClick={() =>
+                                  handleDeleteSprint(sprint.id, sprint.name)
+                                }
                                 className="w-full text-left px-4 py-2 text-sm text-[#C1443A] hover:bg-[#F5F5F4] transition-colors"
                               >
                                 Delete Sprint
@@ -319,16 +379,23 @@ export function BacklogBoard({
                       )}
                     </div>
                   </div>
-                  
-                  <DroppableZone 
-                    id={sprint.id} 
+
+                  <DroppableZone
+                    id={sprint.id}
                     className="min-h-25 bg-white rounded-xl border border-dashed border-[#E4E4E1] p-3 flex flex-col gap-2"
                   >
-                    {sprintTasks.map(task => (
-                      <DraggableTask key={task.id} task={task} onClick={() => onTaskClick(task.id)} disabled={!canEdit} />
+                    {sprintTasks.map((task) => (
+                      <DraggableTask
+                        key={task.id}
+                        task={task}
+                        onClick={() => onTaskClick(task.id)}
+                        disabled={!canEdit}
+                      />
                     ))}
                     {sprintTasks.length === 0 && (
-                      <p className="text-xs text-[#9A9CA3] text-center my-auto">Drop tasks here</p>
+                      <p className="text-xs text-[#9A9CA3] text-center my-auto">
+                        Drop tasks here
+                      </p>
                     )}
                   </DroppableZone>
                 </div>
@@ -337,67 +404,88 @@ export function BacklogBoard({
           )}
         </div>
 
-{/* Right side */}
+        {/* Right side */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center h-10">
             <h2 className="text-xl font-bold text-[#1B1D1F]">Backlog</h2>
           </div>
-          
-          <DroppableZone 
-            id="backlog" 
+
+          <DroppableZone
+            id="backlog"
             className="bg-[#F5F5F4] rounded-2xl p-4 border border-[#E4E4E1] min-h-125 flex flex-col gap-2"
           >
-            {localTasks.filter(t => !(t as any).sprintId).map(task => (
-              <DraggableTask key={task.id} task={task} onClick={() => onTaskClick(task.id)} disabled={!canEdit} />
-            ))}
-            {localTasks.filter(t => !(t as any).sprintId).length === 0 && (
-              <p className="text-sm text-[#6B6F76] text-center pt-8">No tasks in the backlog.</p>
+            {localTasks
+              .filter((t) => !(t as any).sprintId)
+              .map((task) => (
+                <DraggableTask
+                  key={task.id}
+                  task={task}
+                  onClick={() => onTaskClick(task.id)}
+                  disabled={!canEdit}
+                />
+              ))}
+            {localTasks.filter((t) => !(t as any).sprintId).length === 0 && (
+              <p className="text-sm text-[#6B6F76] text-center pt-8">
+                No tasks in the backlog.
+              </p>
             )}
           </DroppableZone>
         </div>
-
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setFormError(''); 
-        }} 
+          setFormError("");
+        }}
         title="Create New Sprint"
       >
         <form onSubmit={handleCreateSprint} className="space-y-4">
           <div>
-            <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">Sprint Name</label>
-            <input required type="text" placeholder="e.g. Sprint 1" value={sprintName} onChange={(e) => setSprintName(e.target.value)} className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors" />
+            <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">
+              Sprint Name
+            </label>
+            <input
+              required
+              type="text"
+              placeholder="e.g. Sprint 1"
+              value={sprintName}
+              onChange={(e) => setSprintName(e.target.value)}
+              className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors"
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">Start Date</label>
-              <input 
-                required 
-                type="date" 
+              <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">
+                Start Date
+              </label>
+              <input
+                required
+                type="date"
                 min={today}
-                value={startDate} 
+                value={startDate}
                 onChange={(e) => {
                   setStartDate(e.target.value);
-                  setFormError('');
-                }} 
-                className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors" 
+                  setFormError("");
+                }}
+                className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">End Date</label>
-              <input 
-                required 
-                type="date" 
+              <label className="block font-mono text-[11px] tracking-wide text-[#6B6F76] uppercase mb-1.5">
+                End Date
+              </label>
+              <input
+                required
+                type="date"
                 min={startDate || today}
-                value={endDate} 
+                value={endDate}
                 onChange={(e) => {
                   setEndDate(e.target.value);
-                  setFormError('');
-                }} 
-                className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors" 
+                  setFormError("");
+                }}
+                className="w-full rounded-lg border border-[#E4E4E1] p-2 text-sm bg-white text-[#1B1D1F] focus:border-[#0F7B6C] focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -407,8 +495,12 @@ export function BacklogBoard({
           )}
 
           <div className="pt-2">
-            <button type="submit" disabled={isSubmitting || !sprintName.trim()} className="w-full bg-[#0F7B6C] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#0B5C51] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              {isSubmitting ? 'Creating...' : 'Create Sprint'}
+            <button
+              type="submit"
+              disabled={isSubmitting || !sprintName.trim()}
+              className="w-full bg-[#0F7B6C] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#0B5C51] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Creating..." : "Create Sprint"}
             </button>
           </div>
         </form>

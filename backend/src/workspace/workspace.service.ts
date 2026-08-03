@@ -320,9 +320,6 @@ export class WorkspaceService {
         if(!invite){
             throw new NotFoundException('Invite not found');
         }
-        if(invite.acceptedAt){
-            throw new UnauthorizedException('Invite has already been accepted');
-        }
         const result = await this.prisma.workspaceInvite.delete({
             where: { id: inviteId },
         });

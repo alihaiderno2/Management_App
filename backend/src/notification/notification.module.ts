@@ -4,6 +4,7 @@ import { NotificationController } from './notification.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ChatModule } from 'src/chat/chat.module';
+import { NotificationProcessor } from './notification.processor';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { ChatModule } from 'src/chat/chat.module';
     forwardRef(() =>ChatModule)
   ],
   controllers: [NotificationController],
-  providers: [NotificationService],
+  providers: [NotificationService, NotificationProcessor],
   exports: [NotificationService],
 })
 export class NotificationModule {}
